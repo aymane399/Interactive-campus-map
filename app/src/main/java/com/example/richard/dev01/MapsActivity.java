@@ -1,6 +1,7 @@
 package com.example.richard.dev01;
 
 import android.content.res.Resources;
+import android.graphics.Color;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -14,16 +15,45 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.MapStyleOptions;
+import com.google.android.gms.maps.model.Polygon;
+import com.google.android.gms.maps.model.PolygonOptions;
 import com.google.android.gms.maps.model.BitmapDescriptor;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
+import com.google.android.gms.maps.model.GroundOverlay;
+import com.google.android.gms.maps.model.GroundOverlayOptions;
 
 //import com.google.android.gms.maps.model.Marker;
 //import com.google.android.gms.maps.model.MarkerOptions;
 
+
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback {
 
     private GoogleMap mMap;
+
+
+    //Nom des batiments//
+    private GroundOverlay mI1nom;
+    private GroundOverlay mI2nom;
+    private GroundOverlay mI3nom;
+    private GroundOverlay mI4nom;
+    private GroundOverlay mI5nom;
+    private GroundOverlay mI6nom;
+    private GroundOverlay mI7nom;
+    private GroundOverlay mI8nom;
+    private GroundOverlay mI9nom;
+    private GroundOverlay mI10nom;
+    private GroundOverlay mI11nom;
+    private GroundOverlay mI12nom;
+
+    
+    //Polygones des batiments//
+    private Polygon polygonei3;
+
+
+
+
     private static final String TAG = MapsActivity.class.getSimpleName();
+
 
 
 
@@ -59,7 +89,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     MapStyleOptions.loadRawResourceStyle(
                             this, R.raw.style_json));
 
-
             if (!success) {
                 Log.e(TAG, "Style parsing failed.");
             }
@@ -85,10 +114,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         // TODO : ROTATION DES LATLNGBOUNDS.
         mMap.setLatLngBoundsForCameraTarget(ADELAIDE);
 
-        //mMap.moveCamera(CameraUpdateFactory.newLatLngBounds(ADELAIDE, 0));
-
-        //mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(ADELAIDE.getCenter(), 10));
-
         CameraPosition cameraPosition = new CameraPosition.Builder()
                 .target(imt)      // Sets the center of the map to imt
                 .zoom(17)                   // Sets the zoom
@@ -108,6 +133,60 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         mMap.setMaxZoomPreference(19f); //Zoom maximal
         mMap.setMinZoomPreference(15f); //Zoom Minimal
 
+
+
+
+        //////NOM DES BATIMENTS//////
+
+
+        //I1
+
+        mI1nom = mMap.addGroundOverlay(new GroundOverlayOptions()
+                .image(BitmapDescriptorFactory.fromResource(R.mipmap.nomi1))
+                .bearing(-24)
+                .zIndex(1)
+                .position(new LatLng(48.357574, -4.570841), 15f, 15f)
+                .clickable(true));
+
+        mI1nom.setTag("Bâtiment I1");
+
+
+        //I3 48.357958, -4.571160
+
+        mI3nom = mMap.addGroundOverlay(new GroundOverlayOptions()
+                .image(BitmapDescriptorFactory.fromResource(R.mipmap.nomi3))
+                .bearing(-24)
+                .zIndex(1)
+                .position(new LatLng(48.357958, -4.571160), 15f, 15f)
+                .clickable(true));
+
+        mI3nom.setTag("Bâtiment I3");
+
+
+        //TODO faire pareil en changeant les noms de batiments et en mettant les bonnes coordonnées
+
+
+
+
+        //////FORME DES BATIMENTS//////
+
+        //polygonI3
+
+        PolygonOptions rectOptions = new PolygonOptions()
+                .add(new LatLng(48.358136, -4.571402))
+                .add(new LatLng(48.358184, -4.571225))
+                .add(new LatLng(48.358000, -4.571101))
+                .add(new LatLng(48.357957, -4.571068))
+                .add(new LatLng(48.357991, -4.570939))
+                .add(new LatLng(48.357893, -4.570872))
+                .add(new LatLng(48.357808, -4.571171))
+                .add(new LatLng(48.357947, -4.571288))
+                .add(new LatLng(48.358136, -4.571402))  // Closes the polyline.
+                .zIndex(0)
+                .fillColor(Color.BLUE);
+
+        // Get back the mutable Polygon
+        polygonei3 = mMap.addPolygon(rectOptions);
 
 
     }
