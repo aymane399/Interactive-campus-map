@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    //Position centre I3
+    <item name="posi3x" format="float" type="dimen">-4.571160</item>
+    <item name="posi3y" format="float" type="dimen">48.357958</item>
+
+    //Position centre i1
+    <item name="posi1x" format="float" type="dimen">-4.570841</item>
+    <item name="posi1y" format="float" type="dimen">48.357574</item>
+
+
+</resources>
