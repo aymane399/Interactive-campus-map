@@ -50,6 +50,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private Polygon polygonei3;
 
 
+    private CameraPosition cameraPosition;
+
+
 
 
     private static final String TAG = MapsActivity.class.getSimpleName();
@@ -114,7 +117,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         // TODO : ROTATION DES LATLNGBOUNDS.
         mMap.setLatLngBoundsForCameraTarget(ADELAIDE);
 
-        CameraPosition cameraPosition = new CameraPosition.Builder()
+        cameraPosition = new CameraPosition.Builder()
                 .target(imt)      // Sets the center of the map to imt
                 .zoom(17)                   // Sets the zoom
                 .bearing(-24)                // Sets the orientation of the camera to imt north
@@ -182,11 +185,23 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 .add(new LatLng(48.357808, -4.571171))
                 .add(new LatLng(48.357947, -4.571288))
                 .add(new LatLng(48.358136, -4.571402))  // Closes the polyline.
+                .clickable(true)
                 .zIndex(0)
                 .fillColor(Color.BLUE);
 
+        mMap.setOnPolygonClickListener(new GoogleMap.OnPolygonClickListener() {
+            public void onPolygonClick(Polygon polygon) {
+
+                mMap.animateCamera(CameraUpdateFactory.newCameraPosition(cameraPosition)); //TEST
+                //setContentView();
+
+            }
+        });
+
         // Get back the mutable Polygon
         polygonei3 = mMap.addPolygon(rectOptions);
+
+
 
 
     }
