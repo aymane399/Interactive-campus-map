@@ -1,15 +1,34 @@
 package com.example.richard.dev01;
 
+
 import android.content.Intent;
 import android.content.res.Resources;
 import android.graphics.Color;
 import android.nfc.Tag;
+import android.widget.Toast;
+
+
+
+import android.content.pm.PackageManager;
 import android.support.v4.app.FragmentActivity;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
+import android.support.v7.app.AlertDialog;
+import android.support.annotation.NonNull;
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.Task;
+
+
 import android.os.Bundle;
 import android.util.Log;
 import android.util.TypedValue;
 
 import android.view.View;
+
+import android.location.Location;
+import com.google.android.gms.maps.GoogleMap.OnMyLocationButtonClickListener;
+import com.google.android.gms.maps.GoogleMap.OnMyLocationClickListener;
+import android.Manifest;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.model.CameraPosition;
@@ -29,12 +48,16 @@ import com.google.android.gms.maps.model.GroundOverlayOptions;
 
 
 
-
 //import com.google.android.gms.maps.model.Marker;
 //import com.google.android.gms.maps.model.MarkerOptions;
 
 
-public class MapsActivity extends FragmentActivity implements OnMapReadyCallback {
+public class MapsActivity extends FragmentActivity
+        implements
+        OnMyLocationButtonClickListener,
+        OnMyLocationClickListener,
+        OnMapReadyCallback,
+        ActivityCompat.OnRequestPermissionsResultCallback {
 
     private GoogleMap mMap;
 
@@ -55,6 +78,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private GroundOverlay mI11nom;
     private GroundOverlay mI12nom;
 
+    private static final int DEFAULT_ZOOM = 17;
+    private final LatLng mDefaultLocation = new LatLng(48.359375,  -4.570071);
+
     
     //Polygones des batiments//
     private Polygon polygonei3;
@@ -63,8 +89,18 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     private CameraPosition cameraPosition;
 
+    private boolean mPermissionDenied = false;
+
+    private static final int LOCATION_PERMISSION_REQUEST_CODE = 1;
+
+    // Keys for storing activity state.
+    private static final String KEY_CAMERA_POSITION = "camera_position";
+    private static final String KEY_LOCATION = "location";
+
 
     private static final String TAG = MapsActivity.class.getSimpleName();
+
+
 
 
 
@@ -73,10 +109,20 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_maps);
+
+
+
+
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
+
+
+
+
+
+
 
     }
 
@@ -113,6 +159,11 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                                           /////
 
         mMap = googleMap;
+
+
+        mMap.setMyLocationEnabled(true);
+        mMap.setOnMyLocationButtonClickListener(this);
+        mMap.setOnMyLocationClickListener(this);
 
         TypedValue typedValue = new TypedValue();
 
@@ -192,7 +243,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
 
         mMap.addMarker(new MarkerOptions()
-                .position(imt)
+                .position(mDefaultLocation)
                 .title("IMT Atlantique")
                 .snippet("L'école d'ingénieur la plus proche de New York")
                 .infoWindowAnchor(0.5f, 0.5f));
@@ -205,9 +256,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         //Animation au démarrage de la carte
 
-        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(imt,10));
+        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(mDefaultLocation,10));
 
-        mMap.animateCamera(CameraUpdateFactory.newCameraPosition(newcameraposition(imt,17)));
+        mMap.animateCamera(CameraUpdateFactory.newCameraPosition(newcameraposition(mDefaultLocation,17)));
 
 
 
@@ -322,5 +373,81 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
 
 
+
+
+
+
+
+
+
+
+
+
+
     }
+
+    /**
+     * Enables the My Location layer if the fine location permission has been granted.
+     */
+    private void enableMyLocation() {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
+                != PackageManager.PERMISSION_GRANTED) {
+            // Permission to access the location is missing.
+            PermissionUtils.requestPermission(this, LOCATION_PERMISSION_REQUEST_CODE,
+                    Manifest.permission.ACCESS_FINE_LOCATION, true);
+        } else if (mMap != null) {
+            // Access to the location has been granted to the app.
+            mMap.setMyLocationEnabled(true);
+        }
+    }
+
+    @Override
+    public boolean onMyLocationButtonClick() {
+        Toast.makeText(this, "MyLocation button clicked", Toast.LENGTH_SHORT).show();
+        // Return false so that we don't consume the event and the default behavior still occurs
+        // (the camera animates to the user's current position).
+        return false;
+    }
+
+    @Override
+    public void onMyLocationClick(@NonNull Location location) {
+        Toast.makeText(this, "Current location:\n" + location, Toast.LENGTH_LONG).show();
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
+                                           @NonNull int[] grantResults) {
+        if (requestCode != LOCATION_PERMISSION_REQUEST_CODE) {
+            return;
+        }
+
+        if (PermissionUtils.isPermissionGranted(permissions, grantResults,
+                Manifest.permission.ACCESS_FINE_LOCATION)) {
+            // Enable the my location layer if the permission has been granted.
+            enableMyLocation();
+        } else {
+            // Display the missing permission error dialog when the fragments resume.
+            mPermissionDenied = true;
+        }
+    }
+
+    @Override
+    protected void onResumeFragments() {
+        super.onResumeFragments();
+        if (mPermissionDenied) {
+            // Permission was not granted, display error dialog.
+            showMissingPermissionError();
+            mPermissionDenied = false;
+        }
+    }
+
+    /**
+     * Displays a dialog with error message explaining that the location permission is missing.
+     */
+    private void showMissingPermissionError() {
+        PermissionUtils.PermissionDeniedDialog
+                .newInstance(true).show(getSupportFragmentManager(), "dialog");
+    }
+
+
 }
