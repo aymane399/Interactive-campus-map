@@ -3,6 +3,7 @@ package com.example.richard.dev01;
 import android.content.Intent;
 import android.content.res.Resources;
 import android.graphics.Color;
+import android.nfc.Tag;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -27,6 +28,8 @@ import com.google.android.gms.maps.model.GroundOverlay;
 import com.google.android.gms.maps.model.GroundOverlayOptions;
 
 
+
+
 //import com.google.android.gms.maps.model.Marker;
 //import com.google.android.gms.maps.model.MarkerOptions;
 
@@ -34,6 +37,8 @@ import com.google.android.gms.maps.model.GroundOverlayOptions;
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback {
 
     private GoogleMap mMap;
+
+    public static int id_batiment;
 
 
     //Nom des batiments//
@@ -53,13 +58,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     
     //Polygones des batiments//
     private Polygon polygonei3;
-
-
+    private Polygon polygoneB03;
 
 
     private CameraPosition cameraPosition;
-
-
 
 
     private static final String TAG = MapsActivity.class.getSimpleName();
@@ -104,9 +106,14 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     @Override
     public void onMapReady(GoogleMap googleMap) {
+
+
+        /////
+        /////INITIALISATION DES COORDONNES/////
+                                          /////
+
         mMap = googleMap;
 
-        //INITIALISATION DES COORDONNES//
         TypedValue typedValue = new TypedValue();
 
 
@@ -127,7 +134,17 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         getResources().getValue(R.dimen.posi3y, typedValue, true);
         float posi3y = typedValue.getFloat();
 
-        final LatLng posi3 = new LatLng(posi3y,posi3x); //48.357958, -4.571160);
+        final LatLng posi3 = new LatLng(posi3y,posi3x);
+
+
+        //CENTRE B03
+        getResources().getValue(R.dimen.posB03x, typedValue, true);
+        float posB03x = typedValue.getFloat();
+
+        getResources().getValue(R.dimen.posB03y, typedValue, true);
+        float posB03y = typedValue.getFloat();
+
+        final LatLng posB03 = new LatLng(posB03y,posB03x);
 
 
         ///RESTRICTIONS///
@@ -172,6 +189,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         // Add a marker in IMT Atlantique and move the camera
         LatLng imt = new LatLng(48.359375,  -4.570071);
+
+
         mMap.addMarker(new MarkerOptions()
                 .position(imt)
                 .title("IMT Atlantique")
@@ -205,8 +224,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 .image(BitmapDescriptorFactory.fromResource(R.mipmap.nomi1))
                 .bearing(-24)
                 .zIndex(1) //Position z
-                .position(posi1, 15f, 15f)
-                .clickable(true));
+                .position(posi1, 15f, 15f));
 
         mI1nom.setTag("Bâtiment I1");
 
@@ -217,8 +235,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 .image(BitmapDescriptorFactory.fromResource(R.mipmap.nomi3))
                 .bearing(-24)
                 .zIndex(1) //Position z
-                .position(posi3, 15f, 15f)
-                .clickable(true));
+                .position(posi3, 15f, 15f));
 
         mI3nom.setTag("Bâtiment I3");
 
@@ -227,12 +244,14 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
 
 
-
+        //////
         //////FORME DES BATIMENTS//////
+                                 //////
 
-        //polygonI3
 
-        PolygonOptions rectOptions = new PolygonOptions()
+        //polygonI3////////////////////////////////////////////////////////
+
+        PolygonOptions rectOptionsI3 = new PolygonOptions()
                 .add(new LatLng(48.358136, -4.571402))
                 .add(new LatLng(48.358184, -4.571225))
                 .add(new LatLng(48.358000, -4.571101))
@@ -247,19 +266,58 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 .fillColor(Color.GRAY);
 
 
-        //Action du click sur le polygone
+        // Ajout du polygone I3 sur la carte
+        polygonei3 = mMap.addPolygon(rectOptionsI3);
+        polygonei3.setTag("I3"); //permet de différencier les polygones
+
+
+        //polygonB03///////////////////////////////////////////////////////
+
+        PolygonOptions rectOptionsB03 = new PolygonOptions()
+                .add(new LatLng(48.358468, -4.570853))
+                .add(new LatLng(48.358533, -4.570646))
+                .add(new LatLng(48.358510, -4.570631))
+                .add(new LatLng(48.358555, -4.570483))
+                .add(new LatLng(48.358571, -4.570391))
+                .add(new LatLng(48.358412, -4.570277))
+                .add(new LatLng(48.358336, -4.570540))
+                .add(new LatLng(48.358363, -4.570560))
+                .add(new LatLng(48.358311, -4.570742))  // Closes the polyline.
+                .clickable(true)
+                .zIndex(0) //Position z
+                .fillColor(Color.GRAY);
+
+        // Ajout du polygone sur la carte
+        polygoneB03 = mMap.addPolygon(rectOptionsB03);
+        polygoneB03.setTag("B03"); //permet de différencier les polygones
+
+
+
+
+
+
+        //Action du click sur n'importe quel polygone
         mMap.setOnPolygonClickListener(new GoogleMap.OnPolygonClickListener() {
             @Override
             public void onPolygonClick(Polygon polygon) {
 
-                mMap.animateCamera(CameraUpdateFactory.newCameraPosition(newcameraposition(posi3,18)));
-                //startActivity(new Intent(MapsActivity.this, ActivityPlan.class));
+                if (polygon.getTag() == "B03"){ //click sur le bat B03
+                    //mMap.animateCamera(CameraUpdateFactory.newCameraPosition(newcameraposition(posB03, 20)));
+                    id_batiment = 15;
+                    startActivity(new Intent(MapsActivity.this, MapsInteriorActivity.class));
+                }
+
+                if (polygon.getTag() == "I3"){ //click sur le bat I3
+                    mMap.animateCamera(CameraUpdateFactory.newCameraPosition(newcameraposition(posi3,18)));
+                    id_batiment = 3;
+                    startActivity(new Intent(MapsActivity.this, MapsInteriorActivity.class));
+                }
+
             }
         });
 
 
-        // Ajout du polygone sur la carte
-        polygonei3 = mMap.addPolygon(rectOptions);
+
 
 
 
