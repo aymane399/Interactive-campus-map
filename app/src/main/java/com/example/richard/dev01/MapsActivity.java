@@ -8,26 +8,25 @@ import android.nfc.Tag;
 import android.widget.Toast;
 
 
-
 import android.content.pm.PackageManager;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
-import android.support.v7.app.AlertDialog;
 import android.support.annotation.NonNull;
-import com.google.android.gms.tasks.OnCompleteListener;
-import com.google.android.gms.tasks.Task;
+
+
 
 
 import android.os.Bundle;
 import android.util.Log;
 import android.util.TypedValue;
 
-import android.view.View;
 
 import android.location.Location;
+
 import com.google.android.gms.maps.GoogleMap.OnMyLocationButtonClickListener;
 import com.google.android.gms.maps.GoogleMap.OnMyLocationClickListener;
+
 import android.Manifest;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
@@ -41,15 +40,13 @@ import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.MapStyleOptions;
 import com.google.android.gms.maps.model.Polygon;
 import com.google.android.gms.maps.model.PolygonOptions;
-import com.google.android.gms.maps.model.BitmapDescriptor;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.GroundOverlay;
 import com.google.android.gms.maps.model.GroundOverlayOptions;
 
 
-
-//import com.google.android.gms.maps.model.Marker;
-//import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.maps.model.Marker;
+import com.google.android.gms.maps.model.MarkerOptions;
 
 
 public class MapsActivity extends FragmentActivity
@@ -79,9 +76,9 @@ public class MapsActivity extends FragmentActivity
     private GroundOverlay mI12nom;
 
     private static final int DEFAULT_ZOOM = 17;
-    private final LatLng mDefaultLocation = new LatLng(48.359375,  -4.570071);
+    private final LatLng mDefaultLocation = new LatLng(48.359375, -4.570071);
 
-    
+
     //Polygones des batiments//
     private Polygon polygonei3;
     private Polygon polygoneB03;
@@ -101,27 +98,16 @@ public class MapsActivity extends FragmentActivity
     private static final String TAG = MapsActivity.class.getSimpleName();
 
 
-
-
-
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_maps);
 
 
-
-
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
-
-
-
-
-
 
 
     }
@@ -138,15 +124,14 @@ public class MapsActivity extends FragmentActivity
      */
 
 
-
-    CameraPosition newcameraposition(LatLng position,int val_zoom) { //Fonction : centrer sur une coordonnée avec une valeur de zoom
+    CameraPosition newcameraposition(LatLng position, int val_zoom) { //Fonction : centrer sur une coordonnée avec une valeur de zoom
         cameraPosition = new CameraPosition.Builder()
                 .target(position)      // Sets the center of the map to imt
                 .zoom(val_zoom)                   // Sets the zoom
                 .bearing(-24)                // Sets the orientation of the camera to imt north
                 .build();                   // Creates a CameraPosition from the builder
 
-        return(cameraPosition);
+        return (cameraPosition);
     }
 
 
@@ -156,7 +141,7 @@ public class MapsActivity extends FragmentActivity
 
         /////
         /////INITIALISATION DES COORDONNES/////
-                                          /////
+        /////
 
         mMap = googleMap;
 

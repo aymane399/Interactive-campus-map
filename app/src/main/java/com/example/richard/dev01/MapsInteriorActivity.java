@@ -5,14 +5,32 @@ import android.content.res.Resources;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.support.v4.app.FragmentActivity;
+import android.support.v4.content.ContextCompat;
+import android.support.v7.app.AppCompatDelegate;
 import android.util.Log;
 import android.util.TypedValue;
+
+
+
+
+
+
 
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
+
+import android.graphics.drawable.Drawable;
+import android.graphics.BitmapFactory;
+import android.content.Context;
+import android.graphics.Canvas;
+import android.graphics.Bitmap;
+import android.support.annotation.DrawableRes;
+import com.google.android.gms.maps.model.BitmapDescriptor;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
+
+
 import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.GroundOverlay;
 import com.google.android.gms.maps.model.GroundOverlayOptions;
@@ -22,6 +40,11 @@ import com.google.android.gms.maps.model.MapStyleOptions;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.Polygon;
 import com.google.android.gms.maps.model.PolygonOptions;
+
+
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.util.Locale;
 
 
 
@@ -40,6 +63,8 @@ public class MapsInteriorActivity extends FragmentActivity implements OnMapReady
     //Polygones des batiments//
     private Polygon polygonei3;
     private Polygon polygoneB03;
+
+    private GroundOverlay imageOverlay;
 
 
 
@@ -138,7 +163,7 @@ public class MapsInteriorActivity extends FragmentActivity implements OnMapReady
 
         //RESTRICTION ZOOM
         mMap.setMaxZoomPreference(22f); //Zoom maximal
-        mMap.setMinZoomPreference(19f); //Zoom Minimal
+        mMap.setMinZoomPreference(20f); //Zoom Minimal
         //////////////////////////////////////////////
 
 
@@ -155,7 +180,7 @@ public class MapsInteriorActivity extends FragmentActivity implements OnMapReady
             // in a raw resource file.
             boolean success = googleMap.setMapStyle(
                     MapStyleOptions.loadRawResourceStyle(
-                            this, R.raw.style_json));
+                            this, R.raw.style_json_interior));
 
             if (!success) {
                 Log.e(TAG, "Style parsing failed.");
@@ -191,8 +216,8 @@ public class MapsInteriorActivity extends FragmentActivity implements OnMapReady
             polygonei3.setTag("I3"); //permet de différencier les polygones
 
             //Moving Camera to I3
-            mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(posi3,19));
-            mMap.animateCamera(CameraUpdateFactory.newCameraPosition(newcameraposition(posi3,19)));
+            mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(posi3,20));
+            mMap.animateCamera(CameraUpdateFactory.newCameraPosition(newcameraposition(posi3,20)));
 
             //RESTRICTION DE LA CARTE
             LatLngBounds RESTRICIMT = new LatLngBounds(
@@ -211,8 +236,9 @@ public class MapsInteriorActivity extends FragmentActivity implements OnMapReady
                     .add(new LatLng(48.358533, -4.570646))
                     .add(new LatLng(48.358510, -4.570631))
                     .add(new LatLng(48.358555, -4.570483))
+                    .add(new LatLng(48.358543, -4.570478))
                     .add(new LatLng(48.358571, -4.570391))
-                    .add(new LatLng(48.358412, -4.570277))
+                    .add(new LatLng(48.358412, -4.570283))
                     .add(new LatLng(48.358336, -4.570540))
                     .add(new LatLng(48.358363, -4.570560))
                     .add(new LatLng(48.358311, -4.570742))  // Closes the polyline.
@@ -225,14 +251,27 @@ public class MapsInteriorActivity extends FragmentActivity implements OnMapReady
             polygoneB03.setTag("B03"); //permet de différencier les polygones
 
             //Moving Camera to B03
-            mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(posB03,19));
-            mMap.animateCamera(CameraUpdateFactory.newCameraPosition(newcameraposition(posB03,19)));
+            mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(posB03, 20));
+            mMap.animateCamera(CameraUpdateFactory.newCameraPosition(newcameraposition(posB03, 20)));
 
             //RESTRICTION DE LA CARTE
             LatLngBounds RESTRICIMT = new LatLngBounds(
-                    new LatLng(48.358201, -4.570943) , new LatLng(48.358614, -4.570147 ));
+                    new LatLng(48.358201, -4.570943), new LatLng(48.358614, -4.570147));
             mMap.setLatLngBoundsForCameraTarget(RESTRICIMT);
 
+
+            Bitmap bm = BitmapFactory.decodeResource(getResources(), R.drawable.b03_plan3_reduit);
+
+            GroundOverlayOptions newarkMap = new GroundOverlayOptions()
+                    .image(BitmapDescriptorFactory.fromBitmap(bm))
+                    .position(posB03, 40f, 31f)
+                    .zIndex(1)
+                    .bearing(-24)
+                    .anchor((float)0.5,(float)0.55);
+
+
+            // Add an overlay to the map, retaining a handle to the GroundOverlay object.
+            GroundOverlay imageOverlay = mMap.addGroundOverlay(newarkMap);
 
 
         }
@@ -256,4 +295,5 @@ public class MapsInteriorActivity extends FragmentActivity implements OnMapReady
 
 
     }
+
 }
