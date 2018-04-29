@@ -15,11 +15,11 @@ import android.support.v4.content.ContextCompat;
 import android.support.annotation.NonNull;
 
 
-
-
 import android.os.Bundle;
 import android.util.Log;
 import android.util.TypedValue;
+
+import java.util.Calendar;
 
 
 import android.location.Location;
@@ -75,13 +75,17 @@ public class MapsActivity extends FragmentActivity
     private GroundOverlay mI11nom;
     private GroundOverlay mI12nom;
 
-    private static final int DEFAULT_ZOOM = 17;
+    private static final int default_zoom = 17;
     private final LatLng mDefaultLocation = new LatLng(48.359375, -4.570071);
 
 
     //Polygones des batiments//
     private Polygon polygonei3;
     private Polygon polygoneB03;
+
+
+    //For the date and style
+    private Calendar calendar = Calendar.getInstance();
 
 
     private CameraPosition cameraPosition;
@@ -146,6 +150,16 @@ public class MapsActivity extends FragmentActivity
         mMap = googleMap;
 
 
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            // TODO: Consider calling
+            //    ActivityCompat#requestPermissions
+            // here to request the missing permissions, and then overriding
+            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+            //                                          int[] grantResults)
+            // to handle the case where the user grants the permission. See the documentation
+            // for ActivityCompat#requestPermissions for more details.
+            return;
+        }
         mMap.setMyLocationEnabled(true);
         mMap.setOnMyLocationButtonClickListener(this);
         mMap.setOnMyLocationClickListener(this);
@@ -205,17 +219,42 @@ public class MapsActivity extends FragmentActivity
 
 
 
+
         ///STYLE DE LA MAP/// (Par défaut pour l'instant)
+
+        int currentHour = calendar.get(Calendar.HOUR_OF_DAY);
+
+        System.out.println("HOUR IS : " + currentHour);
+
+
+
         try {
             // Customise the styling of the base map using a JSON object defined
             // in a raw resource file.
-            boolean success = googleMap.setMapStyle(
-                    MapStyleOptions.loadRawResourceStyle(
-                            this, R.raw.style_json));
 
-            if (!success) {
-                Log.e(TAG, "Style parsing failed.");
+            //Met le style "NIGHT"
+            if ((currentHour > 18) || (currentHour < 7)) {
+                boolean success = googleMap.setMapStyle(
+                        MapStyleOptions.loadRawResourceStyle(
+                                this, R.raw.style_json));
+
+                if (!success) {
+                    Log.e(TAG, "Style parsing failed.");
+                }
             }
+
+            //Met le style "DAY"
+            else {
+                boolean success = googleMap.setMapStyle(
+                        MapStyleOptions.loadRawResourceStyle(
+                                this, R.raw.style_json_day));
+
+                if (!success) {
+                    Log.e(TAG, "Style parsing failed.");
+                }
+            }
+
+
         } catch (Resources.NotFoundException e) {
             Log.e(TAG, "Can't find style. Error: ", e);
         }
@@ -243,7 +282,7 @@ public class MapsActivity extends FragmentActivity
 
         mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(mDefaultLocation,10));
 
-        mMap.animateCamera(CameraUpdateFactory.newCameraPosition(newcameraposition(mDefaultLocation,17)));
+        mMap.animateCamera(CameraUpdateFactory.newCameraPosition(newcameraposition(mDefaultLocation,default_zoom)));
 
 
 
@@ -299,7 +338,8 @@ public class MapsActivity extends FragmentActivity
                 .add(new LatLng(48.358136, -4.571402))  // Closes the polyline.
                 .clickable(true)
                 .zIndex(0) //Position z
-                .fillColor(Color.GRAY);
+                .fillColor(Color.GRAY)
+                .strokeWidth(0.8f);
 
 
         // Ajout du polygone I3 sur la carte
@@ -321,7 +361,8 @@ public class MapsActivity extends FragmentActivity
                 .add(new LatLng(48.358311, -4.570742))  // Closes the polyline.
                 .clickable(true)
                 .zIndex(0) //Position z
-                .fillColor(Color.GRAY);
+                .fillColor(Color.GRAY)
+                .strokeWidth(0.8f);
 
         // Ajout du polygone sur la carte
         polygoneB03 = mMap.addPolygon(rectOptionsB03);
@@ -344,7 +385,7 @@ public class MapsActivity extends FragmentActivity
                 }
 
                 if (polygon.getTag() == "I3"){ //click sur le bat I3
-                    mMap.animateCamera(CameraUpdateFactory.newCameraPosition(newcameraposition(posi3,18)));
+                    //mMap.animateCamera(CameraUpdateFactory.newCameraPosition(newcameraposition(posi3,18)));
                     id_batiment = 3;
                     startActivity(new Intent(MapsActivity.this, MapsInteriorActivity.class));
                 }

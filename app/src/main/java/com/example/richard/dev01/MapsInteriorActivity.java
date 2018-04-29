@@ -10,6 +10,10 @@ import android.support.v7.app.AppCompatDelegate;
 import android.util.Log;
 import android.util.TypedValue;
 
+import android.view.View;
+import android.widget.TextView;
+import android.widget.Button;
+
 
 
 
@@ -37,14 +41,17 @@ import com.google.android.gms.maps.model.GroundOverlayOptions;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.MapStyleOptions;
-import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.Polygon;
 import com.google.android.gms.maps.model.PolygonOptions;
 
 
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.util.Locale;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.ListIterator;
+import java.util.Map;
+
+
 
 
 
@@ -67,6 +74,20 @@ public class MapsInteriorActivity extends FragmentActivity implements OnMapReady
     private GroundOverlay imageOverlay;
 
 
+    private Button b1,b2;
+
+
+
+    //DICTIONNAIRE
+    private List data_bat;
+    private Map<Integer , List > dict_data;
+
+    //Position central
+    private LatLng posi1;
+    private LatLng posi3;
+    private LatLng posB03;
+
+
 
 
     private CameraPosition cameraPosition;
@@ -75,6 +96,21 @@ public class MapsInteriorActivity extends FragmentActivity implements OnMapReady
 
 
     private static final String TAG = MapsInteriorActivity.class.getSimpleName();
+
+
+
+    //Data variables
+    private LatLng pos_wanted;
+    private int res_wanted;
+    private Tuple anchor_tuple ;
+    private Tuple dim_tuple;
+
+
+
+
+
+
+
 
 
 
@@ -88,18 +124,89 @@ public class MapsInteriorActivity extends FragmentActivity implements OnMapReady
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
 
+
+        b1=findViewById(R.id.button1); //Button RDC
+        b2=findViewById(R.id.button2); //Button 1E
+
+        b1.setOnClickListener(new View.OnClickListener() {
+
+            @Override
+            public void onClick(View v) {
+                button_action(MapsActivity.id_batiment,1);
+            }
+        });
+
+        b2.setOnClickListener(new View.OnClickListener() {
+
+            @Override
+            public void onClick(View v) {
+                button_action(MapsActivity.id_batiment,2);
+            }
+        });
+
+        TypedValue typedValue = new TypedValue();
+
+
+
+        //INITIALISATION
+
+        data_bat = new LinkedList();
+        dict_data = new HashMap<>();
+        Tuple<Float, Float> anchor_tuple;
+        Tuple<Float, Float> dim_tuple;
+
+
+        //CENTRE I1
+        getResources().getValue(R.dimen.posi1x, typedValue, true);
+        float posi1x = typedValue.getFloat();
+
+        getResources().getValue(R.dimen.posi1y, typedValue, true);
+        float posi1y = typedValue.getFloat();
+
+        posi1 = new LatLng(posi1y,posi1x);
+
+
+        //CENTRE I3
+        getResources().getValue(R.dimen.posi3x, typedValue, true);
+        float posi3x = typedValue.getFloat();
+
+        getResources().getValue(R.dimen.posi3y, typedValue, true);
+        float posi3y = typedValue.getFloat();
+
+        posi3 = new LatLng(posi3y,posi3x);
+
+        //CENTRE B03
+        getResources().getValue(R.dimen.posB03x, typedValue, true);
+        float posB03x = typedValue.getFloat();
+
+        getResources().getValue(R.dimen.posB03y, typedValue, true);
+        float posB03y = typedValue.getFloat();
+
+        posB03 = new LatLng(posB03y,posB03x);
+
+        //Data
+        anchor_tuple  = new Tuple(0.49,0.55); //Centre de l'image
+        dim_tuple = new Tuple(41.0,31.0); //Dimension de l'image
+
+        data_bat.add(0,posB03); //POS
+        data_bat.add(1,R.drawable.b03_plan_rdc_v2); //RDC
+        data_bat.add(2,R.drawable.b03_plan_1e); //1E
+        data_bat.add(3,0); //2E or -1E
+        data_bat.add(4,0); //other
+        data_bat.add(5,anchor_tuple); //anchor_tuple
+        data_bat.add(6,dim_tuple); //dim_tuple
+        dict_data.put(15,data_bat);
+
+
+
+
+
+
+        //TODO : CREATE DICTIONARIES clé : id_bat (en String) // valeur : pos_... , R.drawable1... , R.drawable2...
+
     }
 
 
-    /**
-     * Manipulates the map once available.
-     * This callback is triggered when the map is ready to be used.
-     * This is where we can add markers or lines, add listeners or move the camera. In this case,
-     * we just add a marker near IMT Atlantique, France.
-     * If Google Play services is not installed on the device, the user will be prompted to install
-     * it inside the SupportMapFragment. This method will only be triggered once the user has
-     * installed Google Play services and returned to the app.
-     */
 
 
 
@@ -114,9 +221,62 @@ public class MapsInteriorActivity extends FragmentActivity implements OnMapReady
     }
 
 
+    //ACTUALISATION DES PLANS SELON LES BOUTONS
+
+    private int local_res = 0; //Permet de ne pas redessiner par dessus le même groundoverlay en cliquant sur le même bouton
+    private GroundOverlay local_imageOverlay; //Permet de ne pas redessiner le même groundoverlay
+
+    private void button_action(int id_bat,int button_number) {
+
+        System.out.println("Button " + button_number + " clicked ");
+
+
+        //RETRIEVE DATA OF ID_BAT
+        pos_wanted = (LatLng) dict_data.get(id_bat).get(0); //Position voulue
+        res_wanted = (int) dict_data.get(id_bat).get(button_number); //Affichage du plan
+        anchor_tuple = (Tuple) dict_data.get(id_bat).get(5); //get anchor_tuple
+        dim_tuple = (Tuple) dict_data.get(id_bat).get(6); //get dim_tuple
+
+        //CONVERSION DOUBLE (8 octets) -> FLOAT (4 octets)
+        float anchor_x = (float) (double) anchor_tuple.get(0);
+        float anchor_y = (float) (double) anchor_tuple.get(1);
+        float dim_x = (float) (double) dim_tuple.get(0);
+        float dim_y = (float) (double) dim_tuple.get(1);
+
+        System.out.println("res_wanted = " + res_wanted + " // pos_wanted = " + pos_wanted + " // local_res =  " + local_res);
+        //System.out.println("local... = " + local_imageOverlay);
+
+
+        if ((res_wanted != 0) && (res_wanted != local_res)) {
+            local_res = res_wanted;
+            Bitmap bm = BitmapFactory.decodeResource(getResources(), res_wanted);
+
+            GroundOverlayOptions drawn_plan = new GroundOverlayOptions()
+                    .image(BitmapDescriptorFactory.fromBitmap(bm))
+                    .position(pos_wanted, dim_x, dim_y)
+                    .zIndex(1)
+                    .bearing(-24)
+                    .anchor(anchor_x,anchor_y);
+
+
+            if (local_imageOverlay != null) {
+                local_imageOverlay.remove(); //retire l'ancien GroundOverlay pour ne pas dépasser la mémoire
+            }
+            GroundOverlay imageOverlay = mMap.addGroundOverlay(drawn_plan);
+            local_imageOverlay = imageOverlay;
+
+        }
+
+
+
+    }
+
+
+
+
+
     @Override
     public void onMapReady(GoogleMap googleMap) {
-
 
 
         /////
@@ -125,52 +285,10 @@ public class MapsInteriorActivity extends FragmentActivity implements OnMapReady
 
         mMap = googleMap;
 
-        TypedValue typedValue = new TypedValue();
-
-
-        //CENTRE I1
-        getResources().getValue(R.dimen.posi1x, typedValue, true);
-        float posi1x = typedValue.getFloat();
-
-        getResources().getValue(R.dimen.posi1y, typedValue, true);
-        float posi1y = typedValue.getFloat();
-
-        final LatLng posi1 = new LatLng(posi1y,posi1x);
-
-
-        //CENTRE I3
-        getResources().getValue(R.dimen.posi3x, typedValue, true);
-        float posi3x = typedValue.getFloat();
-
-        getResources().getValue(R.dimen.posi3y, typedValue, true);
-        float posi3y = typedValue.getFloat();
-
-        final LatLng posi3 = new LatLng(posi3y,posi3x);
-
-        //CENTRE B03
-        getResources().getValue(R.dimen.posB03x, typedValue, true);
-        float posB03x = typedValue.getFloat();
-
-        getResources().getValue(R.dimen.posB03y, typedValue, true);
-        float posB03y = typedValue.getFloat();
-
-        final LatLng posB03 = new LatLng(posB03y,posB03x);
-
-
-
-
-
-
         //RESTRICTION ZOOM
         mMap.setMaxZoomPreference(22f); //Zoom maximal
         mMap.setMinZoomPreference(20f); //Zoom Minimal
         //////////////////////////////////////////////
-
-
-
-
-
-
 
 
 
@@ -189,6 +307,17 @@ public class MapsInteriorActivity extends FragmentActivity implements OnMapReady
             Log.e(TAG, "Can't find style. Error: ", e);
         }
         /////////////////////////////////////////////////////////
+
+        //FOND ECRAN POUR LES BATIMENTS
+        PolygonOptions rectOptionsBlanc = new PolygonOptions()
+                .add(new LatLng(48.355303, -4.575282))
+                .add(new LatLng(48.360716, -4.574562))
+                .add(new LatLng(48.360666, -4.568075))
+                .add(new LatLng(48.355671, -4.567455))
+                .zIndex(-1) //Position z
+                .fillColor(Color.WHITE);
+
+        Polygon polygoneblanc = mMap.addPolygon(rectOptionsBlanc);
 
 
 
@@ -225,6 +354,8 @@ public class MapsInteriorActivity extends FragmentActivity implements OnMapReady
             // Constrain the camera target to the IMT Atlantique bounds (BAS-GAUCHE,HAUT-DROITE)
             // TODO : ROTATION DES LATLNGBOUNDS.
             mMap.setLatLngBoundsForCameraTarget(RESTRICIMT);
+
+            button_action(MapsActivity.id_batiment,1); //Affichage plan étage RDC
         }
 
         else if (MapsActivity.id_batiment == 15) {
@@ -247,8 +378,8 @@ public class MapsInteriorActivity extends FragmentActivity implements OnMapReady
                     .fillColor(Color.GRAY);
 
             // Ajout du polygone sur la carte
-            polygoneB03 = mMap.addPolygon(rectOptionsB03);
-            polygoneB03.setTag("B03"); //permet de différencier les polygones
+            //polygoneB03 = mMap.addPolygon(rectOptionsB03);
+            //polygoneB03.setTag("B03"); //permet de différencier les polygones
 
             //Moving Camera to B03
             mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(posB03, 20));
@@ -259,19 +390,7 @@ public class MapsInteriorActivity extends FragmentActivity implements OnMapReady
                     new LatLng(48.358201, -4.570943), new LatLng(48.358614, -4.570147));
             mMap.setLatLngBoundsForCameraTarget(RESTRICIMT);
 
-
-            Bitmap bm = BitmapFactory.decodeResource(getResources(), R.drawable.b03_plan3_reduit);
-
-            GroundOverlayOptions newarkMap = new GroundOverlayOptions()
-                    .image(BitmapDescriptorFactory.fromBitmap(bm))
-                    .position(posB03, 40f, 31f)
-                    .zIndex(1)
-                    .bearing(-24)
-                    .anchor((float)0.5,(float)0.55);
-
-
-            // Add an overlay to the map, retaining a handle to the GroundOverlay object.
-            GroundOverlay imageOverlay = mMap.addGroundOverlay(newarkMap);
+            button_action(MapsActivity.id_batiment,1); //Affichage plan étage RDC
 
 
         }
@@ -288,12 +407,14 @@ public class MapsInteriorActivity extends FragmentActivity implements OnMapReady
             }
         });
 
-
-
-
-
-
-
     }
+
+
+
+
+
+
+
+
 
 }
