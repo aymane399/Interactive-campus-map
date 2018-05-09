@@ -6,6 +6,11 @@ import android.content.res.Resources;
 import android.graphics.Color;
 import android.nfc.Tag;
 import android.widget.Toast;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.FrameLayout;
+import android.content.Context;
+import android.app.ProgressDialog;
 
 
 import android.content.pm.PackageManager;
@@ -29,11 +34,14 @@ import com.google.android.gms.maps.GoogleMap.OnMyLocationClickListener;
 
 import android.Manifest;
 
+
 import com.google.android.gms.maps.CameraUpdateFactory;
+import com.google.android.gms.maps.UiSettings;
 import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.MapFragment;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.LatLngBounds;
@@ -45,8 +53,10 @@ import com.google.android.gms.maps.model.GroundOverlay;
 import com.google.android.gms.maps.model.GroundOverlayOptions;
 
 
-import com.google.android.gms.maps.model.Marker;
-import com.google.android.gms.maps.model.MarkerOptions;
+
+
+
+
 
 
 public class MapsActivity extends FragmentActivity
@@ -102,6 +112,11 @@ public class MapsActivity extends FragmentActivity
     private static final String TAG = MapsActivity.class.getSimpleName();
 
 
+    private ProgressDialog mLoading;
+    private MapFragment mFragment;
+    static int flid;
+
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -112,6 +127,11 @@ public class MapsActivity extends FragmentActivity
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
+
+
+
+
+
 
 
     }
@@ -149,6 +169,11 @@ public class MapsActivity extends FragmentActivity
 
         mMap = googleMap;
 
+        UiSettings UiSet = mMap.getUiSettings();
+        UiSet.setCompassEnabled(true);
+        UiSet.setMapToolbarEnabled(false);
+        UiSet.setZoomControlsEnabled(true);
+
 
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             // TODO: Consider calling
@@ -160,6 +185,7 @@ public class MapsActivity extends FragmentActivity
             // for ActivityCompat#requestPermissions for more details.
             return;
         }
+
         mMap.setMyLocationEnabled(true);
         mMap.setOnMyLocationButtonClickListener(this);
         mMap.setOnMyLocationClickListener(this);
@@ -280,7 +306,7 @@ public class MapsActivity extends FragmentActivity
 
         //Animation au démarrage de la carte
 
-        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(mDefaultLocation,10));
+        //mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(mDefaultLocation,10));
 
         mMap.animateCamera(CameraUpdateFactory.newCameraPosition(newcameraposition(mDefaultLocation,default_zoom)));
 
@@ -339,7 +365,7 @@ public class MapsActivity extends FragmentActivity
                 .clickable(true)
                 .zIndex(0) //Position z
                 .fillColor(Color.GRAY)
-                .strokeWidth(0.8f);
+                .strokeWidth(2f);
 
 
         // Ajout du polygone I3 sur la carte
@@ -362,7 +388,7 @@ public class MapsActivity extends FragmentActivity
                 .clickable(true)
                 .zIndex(0) //Position z
                 .fillColor(Color.GRAY)
-                .strokeWidth(0.8f);
+                .strokeWidth(2f);
 
         // Ajout du polygone sur la carte
         polygoneB03 = mMap.addPolygon(rectOptionsB03);
@@ -394,6 +420,19 @@ public class MapsActivity extends FragmentActivity
         });
 
 
+
+
+        // When map renders entirely, dismiss ProgressDialog and display MapFragment
+        mMap.setOnMapLoadedCallback(new GoogleMap.OnMapLoadedCallback()
+        {
+            @Override
+            public void onMapLoaded()
+            {
+
+                System.out.println("MAP READY");
+                ActivityLoadingScreen.mapready = true;
+            }
+        });
 
 
 

@@ -31,6 +31,8 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Bitmap;
 import android.support.annotation.DrawableRes;
+
+import com.google.android.gms.maps.UiSettings;
 import com.google.android.gms.maps.model.BitmapDescriptor;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 
@@ -125,6 +127,10 @@ public class MapsInteriorActivity extends FragmentActivity implements OnMapReady
         mapFragment.getMapAsync(this);
 
 
+
+
+
+
         b1=findViewById(R.id.button1); //Button RDC
         b2=findViewById(R.id.button2); //Button 1E
 
@@ -209,7 +215,6 @@ public class MapsInteriorActivity extends FragmentActivity implements OnMapReady
 
 
 
-
     CameraPosition newcameraposition(LatLng position,int val_zoom) { //Fonction : centrer sur une coordonnée avec une valeur de zoom
         cameraPosition = new CameraPosition.Builder()
                 .target(position)      // Sets the center of the map to imt
@@ -284,6 +289,12 @@ public class MapsInteriorActivity extends FragmentActivity implements OnMapReady
                                           /////
 
         mMap = googleMap;
+
+        //UiSettings
+        UiSettings UiSet = mMap.getUiSettings();
+        UiSet.setCompassEnabled(false);
+        UiSet.setMapToolbarEnabled(false);
+        UiSet.setZoomControlsEnabled(true);
 
         //RESTRICTION ZOOM
         mMap.setMaxZoomPreference(22f); //Zoom maximal
