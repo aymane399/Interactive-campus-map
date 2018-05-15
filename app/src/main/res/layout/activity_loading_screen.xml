@@ -35,6 +35,7 @@
             android:textColor="@color/colorWhite"
             android:text="Welcome to IMT Map" />
 
+
     </LinearLayout>
 
 

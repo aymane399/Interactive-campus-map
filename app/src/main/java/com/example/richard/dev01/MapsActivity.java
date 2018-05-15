@@ -1,16 +1,20 @@
 package com.example.richard.dev01;
 
 
+import android.animation.Animator;
 import android.content.Intent;
 import android.content.res.Resources;
 import android.graphics.Color;
 import android.nfc.Tag;
 import android.widget.Toast;
 import android.view.View;
+import android.animation.AnimatorListenerAdapter;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.content.Context;
 import android.app.ProgressDialog;
+
+
 
 
 import android.content.pm.PackageManager;
@@ -111,16 +115,16 @@ public class MapsActivity extends FragmentActivity
 
     private static final String TAG = MapsActivity.class.getSimpleName();
 
-
-    private ProgressDialog mLoading;
-    private MapFragment mFragment;
-    static int flid;
+    private View mContentView;
+    private View mLoadingView;
+    private int mShortAnimationDuration;
 
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_maps);
+
 
 
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
@@ -130,22 +134,19 @@ public class MapsActivity extends FragmentActivity
 
 
 
+        ///TRANSITION LOADING SCREEN -> MAP
+        mContentView = findViewById(R.id.map);
+        mLoadingView = findViewById(R.id.frame_map);
 
+        // Retrieve and cache the system's default "medium" animation time.
+        mShortAnimationDuration = getResources().getInteger(
+                android.R.integer.config_mediumAnimTime);
 
 
 
     }
 
 
-    /**
-     * Manipulates the map once available.
-     * This callback is triggered when the map is ready to be used.
-     * This is where we can add markers or lines, add listeners or move the camera. In this case,
-     * we just add a marker near IMT Atlantique, France.
-     * If Google Play services is not installed on the device, the user will be prompted to install
-     * it inside the SupportMapFragment. This method will only be triggered once the user has
-     * installed Google Play services and returned to the app.
-     */
 
 
     CameraPosition newcameraposition(LatLng position, int val_zoom) { //Fonction : centrer sur une coordonnée avec une valeur de zoom
@@ -288,6 +289,10 @@ public class MapsActivity extends FragmentActivity
 
 
 
+
+
+
+
         // Add a marker in IMT Atlantique and move the camera
         LatLng imt = new LatLng(48.359375,  -4.570071);
 
@@ -410,11 +415,11 @@ public class MapsActivity extends FragmentActivity
                     startActivity(new Intent(MapsActivity.this, MapsInteriorActivity.class));
                 }
 
-                if (polygon.getTag() == "I3"){ //click sur le bat I3
-                    //mMap.animateCamera(CameraUpdateFactory.newCameraPosition(newcameraposition(posi3,18)));
-                    id_batiment = 3;
-                    startActivity(new Intent(MapsActivity.this, MapsInteriorActivity.class));
-                }
+//                if (polygon.getTag() == "I3"){ //click sur le bat I3
+//                    //mMap.animateCamera(CameraUpdateFactory.newCameraPosition(newcameraposition(posi3,18)));
+//                    id_batiment = 3;
+//                    startActivity(new Intent(MapsActivity.this, MapsInteriorActivity.class));
+//                }
 
             }
         });
@@ -431,6 +436,33 @@ public class MapsActivity extends FragmentActivity
 
                 System.out.println("MAP READY");
                 ActivityLoadingScreen.mapready = true;
+
+                //FrameLayout layout = (FrameLayout)findViewById(R.id.frame_map);
+                //layout.setVisibility(View.GONE);
+
+                mContentView.setAlpha(0f);
+                mContentView.setVisibility(View.VISIBLE);
+
+                // Animate the content view to 100% opacity, and clear any animation
+                // listener set on the view.
+                mContentView.animate()
+                        .alpha(1f)
+                        .setDuration(mShortAnimationDuration)
+                        .setListener(null);
+
+                // Animate the loading view to 0% opacity. After the animation ends,
+                // set its visibility to GONE as an optimization step (it won't
+                // participate in layout passes, etc.)
+                mLoadingView.animate()
+                        .alpha(0f)
+                        .setDuration(mShortAnimationDuration)
+                        .setListener(new AnimatorListenerAdapter() {
+                            @Override
+                            public void onAnimationEnd(Animator animation) {
+                                mLoadingView.setVisibility(View.GONE);
+                            }
+                        });
+
             }
         });
 

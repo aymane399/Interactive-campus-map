@@ -31,7 +31,7 @@ public class ActivityPlan extends AppCompatActivity {
             setContentView(R.layout.activity_plani1);
         }
 
-        mImageView=(ImageView)findViewById(R.id.imageView);
+        mImageView= findViewById(R.id.imageView);
         mScaleGestureDetector = new ScaleGestureDetector(this, new ScaleListener());
     }
 

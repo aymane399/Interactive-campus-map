@@ -19,8 +19,8 @@ public class ActivityLoadingScreen extends AppCompatActivity {
         setContentView(R.layout.activity_loading_screen);
         super.onCreate(savedInstanceState);
 
-        textloading = (TextView) findViewById(R.id.textView);
-        imageloading = (ImageView) findViewById(R.id.imageView4);
+        textloading = findViewById(R.id.textView);
+        imageloading = findViewById(R.id.imageView4);
         Animation anim = AnimationUtils.loadAnimation(this,R.anim.loadingscreen);
         textloading.startAnimation(anim);
         imageloading.startAnimation(anim);
