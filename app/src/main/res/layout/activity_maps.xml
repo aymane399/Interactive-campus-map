@@ -55,6 +55,13 @@
                 android:textColor="@color/colorWhite"
                 android:text="Welcome to IMT Map" />
 
+            <ProgressBar
+                android:id="@+id/loading_spinner"
+                style="@android:style/Widget.DeviceDefault.Light.ProgressBar.Large"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center" />
+
 
         </LinearLayout>
 

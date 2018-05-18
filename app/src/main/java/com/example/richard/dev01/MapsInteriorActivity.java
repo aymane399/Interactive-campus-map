@@ -128,9 +128,6 @@ public class MapsInteriorActivity extends FragmentActivity implements OnMapReady
 
 
 
-
-
-
         b1=findViewById(R.id.button1); //Button RDC
         b2=findViewById(R.id.button2); //Button 1E
 
