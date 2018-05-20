@@ -427,7 +427,7 @@ public class MapsActivity extends FragmentActivity
 
 
 
-        // When map renders entirely, dismiss ProgressDialog and display MapFragment
+        // When map renders entirely, and display MapFragment
         mMap.setOnMapLoadedCallback(new GoogleMap.OnMapLoadedCallback()
         {
             @Override
