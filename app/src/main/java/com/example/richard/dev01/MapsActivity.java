@@ -134,13 +134,13 @@ public class MapsActivity extends FragmentActivity
 
 
 
-        // ///TRANSITION LOADING SCREEN -> MAP
-        // mContentView = findViewById(R.id.map);
-        // mLoadingView = findViewById(R.id.frame_map);
+         ///TRANSITION LOADING SCREEN -> MAP
+         mContentView = findViewById(R.id.map);
+         mLoadingView = findViewById(R.id.frame_map);
 
-        // // Retrieve and cache the system's default "medium" animation time.
-        // mShortAnimationDuration = getResources().getInteger(
-        //         android.R.integer.config_mediumAnimTime);
+         // Retrieve and cache the system's default "medium" animation time.
+         mShortAnimationDuration = getResources().getInteger(
+                 android.R.integer.config_mediumAnimTime);
 
 
 
@@ -176,18 +176,18 @@ public class MapsActivity extends FragmentActivity
         UiSet.setZoomControlsEnabled(true);
 
 
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            // TODO: Consider calling
-            //    ActivityCompat#requestPermissions
-            // here to request the missing permissions, and then overriding
-            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-            //                                          int[] grantResults)
-            // to handle the case where the user grants the permission. See the documentation
-            // for ActivityCompat#requestPermissions for more details.
-            return;
-        }
-
-        mMap.setMyLocationEnabled(true);
+//        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+//            // TODO: Consider calling
+//            //    ActivityCompat#requestPermissions
+//            // here to request the missing permissions, and then overriding
+//            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+//            //                                          int[] grantResults)
+//            // to handle the case where the user grants the permission. See the documentation
+//            // for ActivityCompat#requestPermissions for more details.
+//            return;
+//        }
+//
+//        mMap.setMyLocationEnabled(true);
         mMap.setOnMyLocationButtonClickListener(this);
         mMap.setOnMyLocationClickListener(this);
 
@@ -437,31 +437,31 @@ public class MapsActivity extends FragmentActivity
                 System.out.println("MAP READY");
                 ActivityLoadingScreen.mapready = true;
 
-                //FrameLayout layout = (FrameLayout)findViewById(R.id.frame_map);
-                //layout.setVisibility(View.GONE);
+                FrameLayout layout = (FrameLayout)findViewById(R.id.frame_map);
+                layout.setVisibility(View.GONE);
 
-                // mContentView.setAlpha(0f);
-                // mContentView.setVisibility(View.VISIBLE);
+                 mContentView.setAlpha(0f);
+                 mContentView.setVisibility(View.VISIBLE);
 
-                // // Animate the content view to 100% opacity, and clear any animation
-                // // listener set on the view.
-                // mContentView.animate()
-                //         .alpha(1f)
-                //         .setDuration(mShortAnimationDuration)
-                //         .setListener(null);
+                 // Animate the content view to 100% opacity, and clear any animation
+                 // listener set on the view.
+                 mContentView.animate()
+                         .alpha(1f)
+                         .setDuration(mShortAnimationDuration)
+                         .setListener(null);
 
-                // // Animate the loading view to 0% opacity. After the animation ends,
-                // // set its visibility to GONE as an optimization step (it won't
-                // // participate in layout passes, etc.)
-                // mLoadingView.animate()
-                //         .alpha(0f)
-                //         .setDuration(mShortAnimationDuration)
-                //         .setListener(new AnimatorListenerAdapter() {
-                //             @Override
-                //             public void onAnimationEnd(Animator animation) {
-                //                 mLoadingView.setVisibility(View.GONE);
-                //             }
-                //         });
+                 // Animate the loading view to 0% opacity. After the animation ends,
+                 // set its visibility to GONE as an optimization step (it won't
+                 // participate in layout passes, etc.)
+                 mLoadingView.animate()
+                         .alpha(0f)
+                         .setDuration(mShortAnimationDuration)
+                         .setListener(new AnimatorListenerAdapter() {
+                             @Override
+                             public void onAnimationEnd(Animator animation) {
+                                 mLoadingView.setVisibility(View.GONE);
+                             }
+                         });
 
             }
         });
