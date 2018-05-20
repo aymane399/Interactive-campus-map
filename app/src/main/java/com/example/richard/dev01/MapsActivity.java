@@ -14,6 +14,14 @@ import android.widget.FrameLayout;
 import android.content.Context;
 import android.app.ProgressDialog;
 
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
+import android.widget.Spinner;
+import android.widget.TextView;
+import android.widget.Toast;
+import android.content.res.Resources;
+import android.content.res.Resources.NotFoundException;
+
 
 
 
@@ -75,7 +83,7 @@ public class MapsActivity extends FragmentActivity
         OnMyLocationButtonClickListener,
         OnMyLocationClickListener,
         OnMapReadyCallback,
-        ActivityCompat.OnRequestPermissionsResultCallback {
+        ActivityCompat.OnRequestPermissionsResultCallback, AdapterView.OnItemSelectedListener {
 
     private GoogleMap mMap;
 
@@ -161,6 +169,14 @@ public class MapsActivity extends FragmentActivity
          // Retrieve and cache the system's default "medium" animation time.
          mShortAnimationDuration = getResources().getInteger(
                  android.R.integer.config_mediumAnimTime);
+
+
+        Spinner spinner = findViewById(R.id.spinner);
+        ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(
+                this, R.array.Batiments, android.R.layout.simple_spinner_item);
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        spinner.setAdapter(adapter);
+        spinner.setOnItemSelectedListener(this);
 
 
 
@@ -500,7 +516,17 @@ public class MapsActivity extends FragmentActivity
 
 
 
+
+
+
+
+
+
+
+
     }
+
+
 
     /**
      * Prompts the user for permission to use the device location.
@@ -595,20 +621,7 @@ public class MapsActivity extends FragmentActivity
 
 
 
-    /**
-     * Enables the My Location layer if the fine location permission has been granted.
-     */
-    private void enableMyLocation() {
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
-                != PackageManager.PERMISSION_GRANTED) {
-            // Permission to access the location is missing.
-            PermissionUtils.requestPermission(this, LOCATION_PERMISSION_REQUEST_CODE,
-                    Manifest.permission.ACCESS_FINE_LOCATION, true);
-        } else if (mMap != null) {
-            // Access to the location has been granted to the app.
-            mMap.setMyLocationEnabled(true);
-        }
-    }
+
 
     @Override
     public boolean onMyLocationButtonClick() {
@@ -642,6 +655,92 @@ public class MapsActivity extends FragmentActivity
         PermissionUtils.PermissionDeniedDialog
                 .newInstance(true).show(getSupportFragmentManager(), "dialog");
     }
+
+
+
+
+    /*** LISTE DES BATIMENTS ***/
+
+
+    @Override
+    public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l){
+        LatLng li1 = new LatLng(48.357530, -4.570756);
+        LatLng li2 = new LatLng(48.357920, -4.570521);
+        LatLng li3 = new LatLng(48.357916, -4.571108);
+        LatLng li4 = new LatLng(48.357026, -4.570084);
+        LatLng li6 = new LatLng(48.357747, -4.571592);
+        LatLng li7 = new LatLng(48.357524, -4.570147);
+        LatLng li9 = new LatLng(48.356824, -4.569795);
+        LatLng li8 = new LatLng(48.356558, -4.570399);
+        LatLng li10 = new LatLng(48.357708, -4.572834);
+        LatLng li11 = new LatLng(48.357652, -4.572359);
+        LatLng li12 = new LatLng(48.357915, -4.571713);
+        LatLng lRAK = new LatLng(48.360097, -4.571210);
+        LatLng lGymnase = new LatLng(48.358367, -4.572934);
+        LatLng lB03 = new LatLng(48.358480, -4.570587);
+        LatLng lFoyer = new LatLng(48.357973, -4.569120);
+        String text = (String) adapterView.getItemAtPosition(i);
+        LatLng dest = lB03;
+        if (text.equals("Sélectionnez un bâtiment")) {
+        } else {
+            if (text.equals("i1")) {
+                dest = li1;
+            } else if (text.equals("i2")) {
+                dest = li2;
+            } else if (text.equals("i3")) {
+                dest = li3;
+            } else if (text.equals("i4")) {
+                dest = li4;
+            } else if (text.equals("i6")) {
+                dest = li6;
+            } else if (text.equals("i7")) {
+                dest = li7;
+            } else if (text.equals("i8")) {
+                dest = li8;
+            } else if (text.equals("i9")) {
+                dest = li9;
+            } else if (text.equals("i10")) {
+                dest = li10;
+            } else if (text.equals("i11")) {
+                dest = li11;
+            } else if (text.equals("i12")) {
+                dest = li12;
+            } else if (text.equals("RAK")) {
+                dest = lRAK;
+            } else if (text.equals("Foyer")) {
+                dest = lFoyer;
+            } else if (text.equals("Gymnase")) {
+                dest = lGymnase;
+            } else {
+                dest = lB03;
+            }
+
+
+            CameraPosition cameraaPosition = new CameraPosition.Builder()
+                    .target(dest)      // Sets the center of the map to imt
+                    .zoom(19)                   // Sets the zoom
+                    .bearing(-24)                // Sets the orientation of the camera to imt north
+                    .build();                   // Creates a CameraPosition from the builder
+            mMap.animateCamera(CameraUpdateFactory.newCameraPosition(cameraaPosition));
+
+        }
+
+    }
+
+
+
+
+
+    @Override
+    public void onNothingSelected(AdapterView<?> adapterView) {
+
+    }
+
+    @Override
+    public void onPointerCaptureChanged(boolean hasCapture) {
+
+    }
+
 
 
 }
