@@ -3,7 +3,8 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
-      <module fileurl="file://$PROJECT_DIR$/dev01.iml" filepath="$PROJECT_DIR$/dev01.iml" />
+      <module fileurl="file://C:\Users\nouhayla\AndroidStudioProjects\dev02\projet-dev-61\dev01.iml" filepath="C:\Users\nouhayla\AndroidStudioProjects\dev02\projet-dev-61\dev01.iml" />
+      <module fileurl="file://$PROJECT_DIR$/projet-dev-61.iml" filepath="$PROJECT_DIR$/projet-dev-61.iml" />
       <module fileurl="file://C:\Users\Richard\AndroidStudioProjects\dev01\projet-dev-61.iml" filepath="C:\Users\Richard\AndroidStudioProjects\dev01\projet-dev-61.iml" />
       <module fileurl="file://$PROJECT_DIR$/../node_modules/react-native-splash-screen/android/react-native-splash-screen.iml" filepath="$PROJECT_DIR$/../node_modules/react-native-splash-screen/android/react-native-splash-screen.iml" />
     </modules>
