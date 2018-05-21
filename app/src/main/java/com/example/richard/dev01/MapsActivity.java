@@ -14,6 +14,14 @@ import android.widget.FrameLayout;
 import android.content.Context;
 import android.app.ProgressDialog;
 
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
+import android.widget.Spinner;
+import android.widget.TextView;
+import android.widget.Toast;
+import android.content.res.Resources;
+import android.content.res.Resources.NotFoundException;
+
 
 
 
@@ -21,6 +29,8 @@ import android.content.pm.PackageManager;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
+import android.support.v7.app.AlertDialog;
+import android.support.v7.app.AppCompatActivity;
 import android.support.annotation.NonNull;
 
 
@@ -57,6 +67,11 @@ import com.google.android.gms.maps.model.GroundOverlay;
 import com.google.android.gms.maps.model.GroundOverlayOptions;
 
 
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.Task;
+import com.google.android.gms.location.FusedLocationProviderClient;
+import com.google.android.gms.location.LocationServices;
+
 
 
 
@@ -68,7 +83,7 @@ public class MapsActivity extends FragmentActivity
         OnMyLocationButtonClickListener,
         OnMyLocationClickListener,
         OnMapReadyCallback,
-        ActivityCompat.OnRequestPermissionsResultCallback {
+        ActivityCompat.OnRequestPermissionsResultCallback, AdapterView.OnItemSelectedListener {
 
     private GoogleMap mMap;
 
@@ -119,6 +134,16 @@ public class MapsActivity extends FragmentActivity
     private View mLoadingView;
     private int mShortAnimationDuration;
 
+    // The geographical location where the device is currently located. That is, the last-known
+    // location retrieved by the Fused Location Provider.
+    private Location mLastKnownLocation;
+    private boolean mLocationPermissionGranted;
+
+    // The entry point to the Fused Location Provider.
+    private FusedLocationProviderClient mFusedLocationProviderClient;
+
+    private static final int PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION = 1;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -132,15 +157,26 @@ public class MapsActivity extends FragmentActivity
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
 
+        // Construct a FusedLocationProviderClient.
+        mFusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(this);
 
 
-        // ///TRANSITION LOADING SCREEN -> MAP
-        // mContentView = findViewById(R.id.map);
-        // mLoadingView = findViewById(R.id.frame_map);
 
-        // // Retrieve and cache the system's default "medium" animation time.
-        // mShortAnimationDuration = getResources().getInteger(
-        //         android.R.integer.config_mediumAnimTime);
+         ///TRANSITION LOADING SCREEN -> MAP
+         mContentView = findViewById(R.id.map);
+         mLoadingView = findViewById(R.id.frame_map);
+
+         // Retrieve and cache the system's default "medium" animation time.
+         mShortAnimationDuration = getResources().getInteger(
+                 android.R.integer.config_mediumAnimTime);
+
+
+        Spinner spinner = findViewById(R.id.spinner);
+        ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(
+                this, R.array.Batiments, android.R.layout.simple_spinner_item);
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        spinner.setAdapter(adapter);
+        spinner.setOnItemSelectedListener(this);
 
 
 
@@ -160,6 +196,8 @@ public class MapsActivity extends FragmentActivity
     }
 
 
+
+
     @Override
     public void onMapReady(GoogleMap googleMap) {
 
@@ -175,19 +213,16 @@ public class MapsActivity extends FragmentActivity
         UiSet.setMapToolbarEnabled(false);
         UiSet.setZoomControlsEnabled(true);
 
+        // Prompt the user for permission.
+        getLocationPermission();
 
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            // TODO: Consider calling
-            //    ActivityCompat#requestPermissions
-            // here to request the missing permissions, and then overriding
-            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-            //                                          int[] grantResults)
-            // to handle the case where the user grants the permission. See the documentation
-            // for ActivityCompat#requestPermissions for more details.
-            return;
-        }
+        // Turn on the My Location layer and the related control on the map.
+        updateLocationUI();
 
-        mMap.setMyLocationEnabled(true);
+        // Get the current location of the device and set the position of the map.
+        getDeviceLocation();
+
+
         mMap.setOnMyLocationButtonClickListener(this);
         mMap.setOnMyLocationClickListener(this);
 
@@ -226,7 +261,7 @@ public class MapsActivity extends FragmentActivity
 
         ///RESTRICTIONS///
 
-        //RESTRICTION DE LA CARTE
+        //RESTRICTION CONTOUR
         LatLngBounds RESTRICIMT = new LatLngBounds(
                 new LatLng(48.353, -4.5739) , new LatLng(48.363, -4.565));
         // Constrain the camera target to the IMT Atlantique bounds (BAS-GAUCHE,HAUT-DROITE)
@@ -247,7 +282,7 @@ public class MapsActivity extends FragmentActivity
 
 
 
-        ///STYLE DE LA MAP/// (Par défaut pour l'instant)
+        ///STYLE DE LA MAP/// (En fonction de l'heure)
 
         int currentHour = calendar.get(Calendar.HOUR_OF_DAY);
 
@@ -427,7 +462,7 @@ public class MapsActivity extends FragmentActivity
 
 
 
-        // When map renders entirely, dismiss ProgressDialog and display MapFragment
+        // When map renders entirely, and display MapFragment
         mMap.setOnMapLoadedCallback(new GoogleMap.OnMapLoadedCallback()
         {
             @Override
@@ -437,31 +472,31 @@ public class MapsActivity extends FragmentActivity
                 System.out.println("MAP READY");
                 ActivityLoadingScreen.mapready = true;
 
-                //FrameLayout layout = (FrameLayout)findViewById(R.id.frame_map);
-                //layout.setVisibility(View.GONE);
+                FrameLayout layout = (FrameLayout)findViewById(R.id.frame_map);
+                layout.setVisibility(View.GONE);
 
-                // mContentView.setAlpha(0f);
-                // mContentView.setVisibility(View.VISIBLE);
+                 mContentView.setAlpha(0f);
+                 mContentView.setVisibility(View.VISIBLE);
 
-                // // Animate the content view to 100% opacity, and clear any animation
-                // // listener set on the view.
-                // mContentView.animate()
-                //         .alpha(1f)
-                //         .setDuration(mShortAnimationDuration)
-                //         .setListener(null);
+                 // Animate the content view to 100% opacity, and clear any animation
+                 // listener set on the view.
+                 mContentView.animate()
+                         .alpha(1f)
+                         .setDuration(mShortAnimationDuration)
+                         .setListener(null);
 
-                // // Animate the loading view to 0% opacity. After the animation ends,
-                // // set its visibility to GONE as an optimization step (it won't
-                // // participate in layout passes, etc.)
-                // mLoadingView.animate()
-                //         .alpha(0f)
-                //         .setDuration(mShortAnimationDuration)
-                //         .setListener(new AnimatorListenerAdapter() {
-                //             @Override
-                //             public void onAnimationEnd(Animator animation) {
-                //                 mLoadingView.setVisibility(View.GONE);
-                //             }
-                //         });
+                 // Animate the loading view to 0% opacity. After the animation ends,
+                 // set its visibility to GONE as an optimization step (it won't
+                 // participate in layout passes, etc.)
+                 mLoadingView.animate()
+                         .alpha(0f)
+                         .setDuration(mShortAnimationDuration)
+                         .setListener(new AnimatorListenerAdapter() {
+                             @Override
+                             public void onAnimationEnd(Animator animation) {
+                                 mLoadingView.setVisibility(View.GONE);
+                             }
+                         });
 
             }
         });
@@ -481,22 +516,112 @@ public class MapsActivity extends FragmentActivity
 
 
 
+
+
+
+
+
+
+
+
+    }
+
+
+
+    /**
+     * Prompts the user for permission to use the device location.
+     */
+    private void getLocationPermission() {
+        /*
+         * Request location permission, so that we can get the location of the
+         * device. The result of the permission request is handled by a callback,
+         * onRequestPermissionsResult.
+         */
+        if (ContextCompat.checkSelfPermission(this.getApplicationContext(),
+                android.Manifest.permission.ACCESS_FINE_LOCATION)
+                == PackageManager.PERMISSION_GRANTED) {
+            mLocationPermissionGranted = true;
+        } else {
+            ActivityCompat.requestPermissions(this,
+                    new String[]{android.Manifest.permission.ACCESS_FINE_LOCATION},
+                    PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION);
+        }
     }
 
     /**
-     * Enables the My Location layer if the fine location permission has been granted.
+     * Handles the result of the request for location permissions.
      */
-    private void enableMyLocation() {
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
-                != PackageManager.PERMISSION_GRANTED) {
-            // Permission to access the location is missing.
-            PermissionUtils.requestPermission(this, LOCATION_PERMISSION_REQUEST_CODE,
-                    Manifest.permission.ACCESS_FINE_LOCATION, true);
-        } else if (mMap != null) {
-            // Access to the location has been granted to the app.
-            mMap.setMyLocationEnabled(true);
+    @Override
+    public void onRequestPermissionsResult(int requestCode,
+                                           @NonNull String permissions[],
+                                           @NonNull int[] grantResults) {
+        mLocationPermissionGranted = false;
+        switch (requestCode) {
+            case PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION: {
+                // If request is cancelled, the result arrays are empty.
+                if (grantResults.length > 0
+                        && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    mLocationPermissionGranted = true;
+                }
+            }
+        }
+        updateLocationUI();
+    }
+
+
+    /**
+     * Gets the current location of the device, and positions the map's camera.
+     */
+    private void getDeviceLocation() {
+        /*
+         * Get the best and most recent location of the device, which may be null in rare
+         * cases when a location is not available.
+         */
+        try {
+            if (mLocationPermissionGranted) {
+                Task<Location> locationResult = mFusedLocationProviderClient.getLastLocation();
+                locationResult.addOnCompleteListener(this, new OnCompleteListener<Location>() {
+                    @Override
+                    public void onComplete(@NonNull Task<Location> task) {
+                        if (task.isSuccessful()) {
+                            // Set the map's camera position to the current location of the device.
+                            mLastKnownLocation = task.getResult();
+                        } else {
+                            Log.d(TAG, "Current location is null. Using defaults.");
+                            Log.e(TAG, "Exception: %s", task.getException());
+                            mMap.getUiSettings().setMyLocationButtonEnabled(false);
+                        }
+                    }
+                });
+            }
+        } catch (SecurityException e)  {
+            Log.e("Exception: %s", e.getMessage());
         }
     }
+
+    private void updateLocationUI() {
+        if (mMap == null) {
+            return;
+        }
+        try {
+            if (mLocationPermissionGranted) {
+                mMap.setMyLocationEnabled(true);
+                mMap.getUiSettings().setMyLocationButtonEnabled(true);
+            } else {
+                mMap.setMyLocationEnabled(false);
+                mMap.getUiSettings().setMyLocationButtonEnabled(false);
+                mLastKnownLocation = null;
+                getLocationPermission();
+            }
+        } catch (SecurityException e)  {
+            Log.e("Exception: %s", e.getMessage());
+        }
+    }
+
+
+
+
+
 
     @Override
     public boolean onMyLocationButtonClick() {
@@ -511,22 +636,7 @@ public class MapsActivity extends FragmentActivity
         Toast.makeText(this, "Current location:\n" + location, Toast.LENGTH_LONG).show();
     }
 
-    @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
-                                           @NonNull int[] grantResults) {
-        if (requestCode != LOCATION_PERMISSION_REQUEST_CODE) {
-            return;
-        }
 
-        if (PermissionUtils.isPermissionGranted(permissions, grantResults,
-                Manifest.permission.ACCESS_FINE_LOCATION)) {
-            // Enable the my location layer if the permission has been granted.
-            enableMyLocation();
-        } else {
-            // Display the missing permission error dialog when the fragments resume.
-            mPermissionDenied = true;
-        }
-    }
 
     @Override
     protected void onResumeFragments() {
@@ -545,6 +655,92 @@ public class MapsActivity extends FragmentActivity
         PermissionUtils.PermissionDeniedDialog
                 .newInstance(true).show(getSupportFragmentManager(), "dialog");
     }
+
+
+
+
+    /*** LISTE DES BATIMENTS ***/
+
+
+    @Override
+    public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l){
+        LatLng li1 = new LatLng(48.357530, -4.570756);
+        LatLng li2 = new LatLng(48.357920, -4.570521);
+        LatLng li3 = new LatLng(48.357916, -4.571108);
+        LatLng li4 = new LatLng(48.357026, -4.570084);
+        LatLng li6 = new LatLng(48.357747, -4.571592);
+        LatLng li7 = new LatLng(48.357524, -4.570147);
+        LatLng li9 = new LatLng(48.356824, -4.569795);
+        LatLng li8 = new LatLng(48.356558, -4.570399);
+        LatLng li10 = new LatLng(48.357708, -4.572834);
+        LatLng li11 = new LatLng(48.357652, -4.572359);
+        LatLng li12 = new LatLng(48.357915, -4.571713);
+        LatLng lRAK = new LatLng(48.360097, -4.571210);
+        LatLng lGymnase = new LatLng(48.358367, -4.572934);
+        LatLng lB03 = new LatLng(48.358480, -4.570587);
+        LatLng lFoyer = new LatLng(48.357973, -4.569120);
+        String text = (String) adapterView.getItemAtPosition(i);
+        LatLng dest = lB03;
+        if (text.equals("Sélectionnez un bâtiment")) {
+        } else {
+            if (text.equals("i1")) {
+                dest = li1;
+            } else if (text.equals("i2")) {
+                dest = li2;
+            } else if (text.equals("i3")) {
+                dest = li3;
+            } else if (text.equals("i4")) {
+                dest = li4;
+            } else if (text.equals("i6")) {
+                dest = li6;
+            } else if (text.equals("i7")) {
+                dest = li7;
+            } else if (text.equals("i8")) {
+                dest = li8;
+            } else if (text.equals("i9")) {
+                dest = li9;
+            } else if (text.equals("i10")) {
+                dest = li10;
+            } else if (text.equals("i11")) {
+                dest = li11;
+            } else if (text.equals("i12")) {
+                dest = li12;
+            } else if (text.equals("RAK")) {
+                dest = lRAK;
+            } else if (text.equals("Foyer")) {
+                dest = lFoyer;
+            } else if (text.equals("Gymnase")) {
+                dest = lGymnase;
+            } else {
+                dest = lB03;
+            }
+
+
+            CameraPosition cameraaPosition = new CameraPosition.Builder()
+                    .target(dest)      // Sets the center of the map to imt
+                    .zoom(19)                   // Sets the zoom
+                    .bearing(-24)                // Sets the orientation of the camera to imt north
+                    .build();                   // Creates a CameraPosition from the builder
+            mMap.animateCamera(CameraUpdateFactory.newCameraPosition(cameraaPosition));
+
+        }
+
+    }
+
+
+
+
+
+    @Override
+    public void onNothingSelected(AdapterView<?> adapterView) {
+
+    }
+
+    @Override
+    public void onPointerCaptureChanged(boolean hasCapture) {
+
+    }
+
 
 
 }
