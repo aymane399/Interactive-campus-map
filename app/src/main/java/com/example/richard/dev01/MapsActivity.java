@@ -39,6 +39,7 @@ import android.util.Log;
 import android.util.TypedValue;
 
 import java.util.Calendar;
+import java.util.Date;
 
 
 import android.location.Location;
@@ -71,6 +72,29 @@ import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationServices;
+import com.luckycatlabs.sunrisesunset.SunriseSunsetCalculator;
+
+
+import android.support.annotation.NonNull;
+import android.support.design.widget.BottomSheetBehavior;
+import android.support.design.widget.BottomSheetDialog;
+import android.support.design.widget.FloatingActionButton;
+import android.support.design.widget.Snackbar;
+import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.Toolbar;
+import android.util.Log;
+import android.view.View;
+import android.view.Menu;
+import android.view.MenuItem;
+import android.widget.Button;
+import android.widget.LinearLayout;
+import android.widget.RelativeLayout;
+
+import org.shredzone.commons.suncalc.SunTimes;
+
+import butterknife.BindView;
+import butterknife.ButterKnife;
+import butterknife.OnClick;
 
 
 
@@ -82,10 +106,15 @@ public class MapsActivity extends FragmentActivity
         implements
         OnMyLocationButtonClickListener,
         OnMyLocationClickListener,
+        GoogleMap.OnMapClickListener,
+        GoogleMap.OnGroundOverlayClickListener,
         OnMapReadyCallback,
-        ActivityCompat.OnRequestPermissionsResultCallback, AdapterView.OnItemSelectedListener {
+        ActivityCompat.OnRequestPermissionsResultCallback,
+        AdapterView.OnItemSelectedListener{
 
     private GoogleMap mMap;
+
+
 
     public static int id_batiment;
 
@@ -104,6 +133,12 @@ public class MapsActivity extends FragmentActivity
     private GroundOverlay mI11nom;
     private GroundOverlay mI12nom;
 
+    //Nom icone bus
+    private GroundOverlay mBus1;
+    private GroundOverlay mBus2;
+
+
+
     private static final int default_zoom = 17;
     private final LatLng mDefaultLocation = new LatLng(48.359375, -4.570071);
 
@@ -111,6 +146,11 @@ public class MapsActivity extends FragmentActivity
     //Polygones des batiments//
     private Polygon polygonei3;
     private Polygon polygoneB03;
+
+    private LatLng posi3;
+    private LatLng posB03;
+    private LatLng posBus1;
+    private LatLng posBus2;
 
 
     //For the date and style
@@ -144,11 +184,48 @@ public class MapsActivity extends FragmentActivity
 
     private static final int PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION = 1;
 
+    private TextView bat_name_text;
+
+
+    @BindView(R.id.sunrise_tint)
+    FrameLayout sunrise_filter;
+
+
+
+
+
+    //INFO WINDOW BOTTOM SHEET
+
+
+    @BindView(R.id.bottom_sheet)
+    LinearLayout layoutBottomSheet;
+
+    @BindView(R.id.plan_inte)
+    Button plan_inte;
+
+    @BindView(R.id.heure_ouvert)
+    TextView heure_ouvert;
+
+    @BindView(R.id.info_supp)
+    TextView info_supp;
+
+    @BindView(R.id.info1)
+    TextView info1;
+
+    @BindView(R.id.info2)
+    TextView info2;
+
+    BottomSheetBehavior sheetBehavior;
+
+
+
+
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_maps);
+        setContentView(R.layout.activity_over_main);
 
 
 
@@ -166,6 +243,9 @@ public class MapsActivity extends FragmentActivity
          mContentView = findViewById(R.id.map);
          mLoadingView = findViewById(R.id.frame_map);
 
+         //BOTTOM SHEET
+         bat_name_text = findViewById(R.id.bat_name);
+
          // Retrieve and cache the system's default "medium" animation time.
          mShortAnimationDuration = getResources().getInteger(
                  android.R.integer.config_mediumAnimTime);
@@ -179,21 +259,26 @@ public class MapsActivity extends FragmentActivity
         spinner.setOnItemSelectedListener(this);
 
 
+        //INFO WINDOW BOTTOM SHEET
+
+        ButterKnife.bind(this);
+
+
+        sheetBehavior = BottomSheetBehavior.from(layoutBottomSheet);
+
 
     }
 
 
 
 
-    CameraPosition newcameraposition(LatLng position, int val_zoom) { //Fonction : centrer sur une coordonnée avec une valeur de zoom
-        cameraPosition = new CameraPosition.Builder()
-                .target(position)      // Sets the center of the map to imt
-                .zoom(val_zoom)                   // Sets the zoom
-                .bearing(-24)                // Sets the orientation of the camera to imt north
-                .build();                   // Creates a CameraPosition from the builder
 
-        return (cameraPosition);
-    }
+
+
+
+
+
+
 
 
 
@@ -214,13 +299,13 @@ public class MapsActivity extends FragmentActivity
         UiSet.setZoomControlsEnabled(true);
 
         // Prompt the user for permission.
-        getLocationPermission();
+        //getLocationPermission();
 
         // Turn on the My Location layer and the related control on the map.
-        updateLocationUI();
+        //updateLocationUI();
 
         // Get the current location of the device and set the position of the map.
-        getDeviceLocation();
+        //getDeviceLocation();
 
 
         mMap.setOnMyLocationButtonClickListener(this);
@@ -246,7 +331,7 @@ public class MapsActivity extends FragmentActivity
         getResources().getValue(R.dimen.posi3y, typedValue, true);
         float posi3y = typedValue.getFloat();
 
-        final LatLng posi3 = new LatLng(posi3y,posi3x);
+        posi3 = new LatLng(posi3y,posi3x);
 
 
         //CENTRE B03
@@ -256,7 +341,25 @@ public class MapsActivity extends FragmentActivity
         getResources().getValue(R.dimen.posB03y, typedValue, true);
         float posB03y = typedValue.getFloat();
 
-        final LatLng posB03 = new LatLng(posB03y,posB03x);
+        posB03 = new LatLng(posB03y,posB03x);
+
+        //CENTRE Bus vers mairie
+        getResources().getValue(R.dimen.posBus1x, typedValue, true);
+        float posBus1x = typedValue.getFloat();
+
+        getResources().getValue(R.dimen.posBus1y, typedValue, true);
+        float posBus1y = typedValue.getFloat();
+
+        posBus1 = new LatLng(posBus1y,posBus1x);
+
+        //CENTRE Bus vers Brest
+        getResources().getValue(R.dimen.posBus2x, typedValue, true);
+        float posBus2x = typedValue.getFloat();
+
+        getResources().getValue(R.dimen.posBus2y, typedValue, true);
+        float posBus2y = typedValue.getFloat();
+
+        posBus2 = new LatLng(posBus2y,posBus2x);
 
 
         ///RESTRICTIONS///
@@ -284,18 +387,93 @@ public class MapsActivity extends FragmentActivity
 
         ///STYLE DE LA MAP/// (En fonction de l'heure)
 
-        int currentHour = calendar.get(Calendar.HOUR_OF_DAY);
 
-        System.out.println("HOUR IS : " + currentHour);
+
+        int currentHour = calendar.get(Calendar.HOUR_OF_DAY);
+        int currentMinute = calendar.get(Calendar.MINUTE);
+
+        System.out.println("HOUR IS : " + currentHour + ":" + currentMinute);
+
+        //https://github.com/caarmen/SunriseSunset
+        Calendar[] sunriseSunset = ca.rmen.sunrisesunset.SunriseSunset.getSunriseSunset(Calendar.getInstance(), 48.359375, -4.570071);
+        int sunriseHour = sunriseSunset[0].get(Calendar.HOUR_OF_DAY);
+        int sunriseMinute = sunriseSunset[0].get(Calendar.MINUTE);
+        int sunsetHour = sunriseSunset[1].get(Calendar.HOUR_OF_DAY);
+        int sunsetMinute = sunriseSunset[1].get(Calendar.MINUTE);
+
+
+        System.out.println("Sunrise at: " + sunriseHour + ":" + sunriseMinute);
+        System.out.println("Sunset at: " + sunsetHour + ":"+ sunsetMinute);
+
+
+        //Standardisation de l'heure Sunset sunrise :
+        //Intervalle Sunrise :
+        int min_sunriseMinute = 0;
+        int min_sunriseHour = 0;
+        int max_sunriseMinute = 0;
+        int max_sunriseHour = 0;
+        if (sunriseMinute < 30){
+            min_sunriseMinute = sunriseMinute + 30;
+            min_sunriseHour = sunriseHour - 1;
+            max_sunriseMinute = sunriseMinute + 30;
+            max_sunriseHour = sunriseHour;
+        }
+        else if (sunriseMinute >= 30){
+            min_sunriseMinute = sunriseMinute - 30;
+            min_sunriseHour = sunriseHour;
+            max_sunriseMinute = sunriseMinute - 30;
+            max_sunriseHour = sunriseHour + 1;
+        }
+
+
+
+        int min_sunsetMinute = 0;
+        int min_sunsetHour = 0;
+        int max_sunsetMinute = 0;
+        int max_sunsetHour = 0;
+        if (sunsetMinute < 30){
+            min_sunsetMinute = sunsetMinute + 30;
+            min_sunsetHour = sunsetHour - 1;
+            max_sunsetMinute = sunsetMinute + 30;
+            max_sunsetHour = sunsetHour;
+        }
+        else if (sunsetMinute >= 30){
+            min_sunsetMinute = sunsetMinute - 30;
+            min_sunsetHour = sunsetHour;
+            max_sunsetMinute = sunsetMinute - 30;
+            max_sunsetHour = sunsetHour + 1;
+        }
+
+
+        //Permet de comparer l'heure actuelle avec les heures min/max de sunrise/sunset
+        //Valeur des min/max en minute
+        int sum_min_sunrise = min_sunriseHour*60 + min_sunriseMinute;
+        int sum_max_sunrise = max_sunriseHour*60 + max_sunriseMinute;
+        int sum_min_sunset = min_sunsetHour*60 + min_sunsetMinute;
+        int sum_max_sunset = max_sunsetHour*60 + max_sunsetMinute;
+
+        //Valeur heure actuelle en minute
+        int sum_current = currentHour*60 + currentMinute;
+
+
+
+
+        System.out.println("min_sunrise at: " + min_sunriseHour + ":" + min_sunriseMinute);
+        System.out.println("max_sunrise at: " + max_sunriseHour + ":" + max_sunriseMinute);
+        System.out.println("min_sunset at: " + min_sunsetHour + ":" + min_sunsetMinute);
+        System.out.println("max_sunset at: " + max_sunsetHour + ":" + max_sunsetMinute);
+
+
+
+
+
 
 
 
         try {
-            // Customise the styling of the base map using a JSON object defined
-            // in a raw resource file.
 
             //Met le style "NIGHT"
-            if ((currentHour > 18) || (currentHour < 7)) {
+            if ( (sum_current >= sum_max_sunset) || (sum_current < sum_min_sunrise)) {
                 boolean success = googleMap.setMapStyle(
                         MapStyleOptions.loadRawResourceStyle(
                                 this, R.raw.style_json));
@@ -303,16 +481,37 @@ public class MapsActivity extends FragmentActivity
                 if (!success) {
                     Log.e(TAG, "Style parsing failed.");
                 }
+
+                sunrise_filter.setVisibility(View.INVISIBLE);
+                System.out.println("NIGHT");
             }
 
             //Met le style "DAY"
             else {
+
                 boolean success = googleMap.setMapStyle(
                         MapStyleOptions.loadRawResourceStyle(
                                 this, R.raw.style_json_day));
 
                 if (!success) {
                     Log.e(TAG, "Style parsing failed.");
+                }
+
+
+                //Met le style "DAY" sans le filtre sunset/sunrise
+                if ( ((sum_current >= sum_min_sunrise)
+                        && (sum_current < sum_max_sunrise))
+                        || ((sum_current >= sum_min_sunset)
+                        && (sum_current < sum_max_sunset))
+                         ) {
+                    sunrise_filter.setVisibility(View.VISIBLE);
+                    System.out.println("SUNRISE OR SUNSET");
+                }
+
+                //Met le filtre "DAY" avec le filtre sunset/sunrise
+                else {
+                    sunrise_filter.setVisibility(View.INVISIBLE);
+                    System.out.println("DAY");
                 }
             }
 
@@ -340,14 +539,7 @@ public class MapsActivity extends FragmentActivity
         ///////////////////////////////////////////////////////////////////
 
 
-
-
-
-
-        //Animation au démarrage de la carte
-
-        //mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(mDefaultLocation,10));
-
+        //Place la caméra sur IMT Atlantique
         mMap.animateCamera(CameraUpdateFactory.newCameraPosition(newcameraposition(mDefaultLocation,default_zoom)));
 
 
@@ -370,7 +562,7 @@ public class MapsActivity extends FragmentActivity
         mI1nom.setTag("Bâtiment I1");
 
 
-        //I3 48.357958, -4.571160
+        //I3
 
         mI3nom = mMap.addGroundOverlay(new GroundOverlayOptions()
                 .image(BitmapDescriptorFactory.fromResource(R.mipmap.nomi3))
@@ -382,6 +574,28 @@ public class MapsActivity extends FragmentActivity
 
 
         //TODO faire pareil en changeant les noms de batiments et en mettant les bonnes coordonnées
+
+
+
+        ///ICONE BUS///
+
+        mBus1 = mMap.addGroundOverlay(new GroundOverlayOptions()
+                .image(BitmapDescriptorFactory.fromResource(R.mipmap.bus_logo1))
+                .bearing(-24)
+                .clickable(true)
+                .zIndex(2) //Position z
+                .position(posBus1, 16f, 16f));
+
+        mBus1.setTag("Bus vers mairie");
+
+        mBus2 = mMap.addGroundOverlay(new GroundOverlayOptions()
+                .image(BitmapDescriptorFactory.fromResource(R.mipmap.bus_logo1))
+                .bearing(-24)
+                .clickable(true)
+                .zIndex(2) //Position z
+                .position(posBus2, 16f, 16f));
+
+        mBus2.setTag("Bus vers Brest");
 
 
 
@@ -443,21 +657,23 @@ public class MapsActivity extends FragmentActivity
         mMap.setOnPolygonClickListener(new GoogleMap.OnPolygonClickListener() {
             @Override
             public void onPolygonClick(Polygon polygon) {
-
-                if (polygon.getTag() == "B03"){ //click sur le bat B03
-                    //mMap.animateCamera(CameraUpdateFactory.newCameraPosition(newcameraposition(posB03, 20)));
-                    id_batiment = 15;
-                    startActivity(new Intent(MapsActivity.this, MapsInteriorActivity.class));
-                }
-
-//                if (polygon.getTag() == "I3"){ //click sur le bat I3
-//                    //mMap.animateCamera(CameraUpdateFactory.newCameraPosition(newcameraposition(posi3,18)));
-//                    id_batiment = 3;
-//                    startActivity(new Intent(MapsActivity.this, MapsInteriorActivity.class));
-//                }
+                show_bottom_sheet_poly(polygon);
 
             }
         });
+
+        mMap.setOnGroundOverlayClickListener(new GoogleMap.OnGroundOverlayClickListener() {
+            @Override
+            public void onGroundOverlayClick(GroundOverlay groundOverlay) {
+
+                show_bottom_sheet_ground(groundOverlay);
+
+            }
+        });
+
+
+
+
 
 
 
@@ -501,30 +717,154 @@ public class MapsActivity extends FragmentActivity
             }
         });
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+        mMap.setOnMapClickListener(this);
 
 
 
 
     }
+
+    CameraPosition newcameraposition(LatLng position, int val_zoom) { //Fonction : centrer sur une coordonnée avec une valeur de zoom
+        cameraPosition = new CameraPosition.Builder()
+                .target(position)      // Sets the center of the map to imt
+                .zoom(val_zoom)                   // Sets the zoom
+                .bearing(-24)                // Sets the orientation of the camera to imt north
+                .build();                   // Creates a CameraPosition from the builder
+
+        return (cameraPosition);
+    }
+
+
+
+
+    private void show_bottom_sheet_poly(Polygon polygon){
+        if (polygon.getTag() == "I3"){ //click sur le bat I3
+            mMap.animateCamera(CameraUpdateFactory.newCameraPosition(newcameraposition(posi3,18)));
+            id_batiment = 3;
+            if (sheetBehavior.getState() != BottomSheetBehavior.STATE_EXPANDED) {
+                //INFO
+                plan_inte.setVisibility(View.GONE);
+                bat_name_text.setText("Bâtiment I3");
+                heure_ouvert.setVisibility(View.GONE);
+                info_supp.setVisibility(View.VISIBLE);
+                info1.setVisibility(View.VISIBLE);
+                info1.setText("Secrétariat de la Maisel");
+                info2.setVisibility(View.GONE);
+                sheetBehavior.setState(BottomSheetBehavior.STATE_EXPANDED);
+
+
+            }
+            else {
+                sheetBehavior.setState(BottomSheetBehavior.STATE_COLLAPSED);
+                //INFO
+                plan_inte.setVisibility(View.GONE);
+                bat_name_text.setText("Bâtiment I3");
+                heure_ouvert.setVisibility(View.GONE);
+                info_supp.setVisibility(View.VISIBLE);
+                info1.setVisibility(View.VISIBLE);
+                info1.setText("Secrétariat de la Maisel");
+                info2.setVisibility(View.GONE);
+                sheetBehavior.setState(BottomSheetBehavior.STATE_EXPANDED);
+            }
+        }
+
+        if (polygon.getTag() == "B03"){ //click sur le bat B03
+            mMap.animateCamera(CameraUpdateFactory.newCameraPosition(newcameraposition(posB03, 18)));
+            id_batiment = 15;
+            if (sheetBehavior.getState() != BottomSheetBehavior.STATE_EXPANDED) {
+                //INFO
+                plan_inte.setVisibility(View.VISIBLE);
+                bat_name_text.setText("Bâtiment B03");
+                heure_ouvert.setVisibility(View.VISIBLE);
+                heure_ouvert.setText("Heures ouverture/fermture : 7h00 - 23h00");
+                info_supp.setVisibility(View.GONE);
+                info1.setVisibility(View.GONE);
+                info2.setVisibility(View.GONE);
+                sheetBehavior.setState(BottomSheetBehavior.STATE_EXPANDED);
+
+
+            }
+            else {
+                sheetBehavior.setState(BottomSheetBehavior.STATE_COLLAPSED);
+                //INFO
+                plan_inte.setVisibility(View.VISIBLE);
+                bat_name_text.setText("Bâtiment B03");
+                heure_ouvert.setVisibility(View.VISIBLE);
+                heure_ouvert.setText("Heures ouverture/fermture : 7h00 - 23h00");
+                info_supp.setVisibility(View.GONE);
+                info1.setVisibility(View.GONE);
+                info2.setVisibility(View.GONE);
+                sheetBehavior.setState(BottomSheetBehavior.STATE_EXPANDED);
+            }
+
+        }
+
+
+    }
+
+
+    private void show_bottom_sheet_ground(GroundOverlay groundOverlay) {
+
+        if (groundOverlay.getTag() == "Bus vers mairie") {
+            mMap.animateCamera(CameraUpdateFactory.newCameraPosition(newcameraposition(posBus1,18)));
+            System.out.println("MAIRIE BUS");
+
+        }
+
+        else if (groundOverlay.getTag() == "Bus vers Brest") {
+            mMap.animateCamera(CameraUpdateFactory.newCameraPosition(newcameraposition(posBus2,18)));
+            System.out.println("BREST BUS");
+
+        }
+
+
+    }
+
+
+
+
+    @OnClick(R.id.plan_inte)
+    public void change_activity() {
+        if (id_batiment == 15){ //click sur le bat B03
+            startActivity(new Intent(MapsActivity.this, MapsInteriorActivity.class));
+        }
+
+    }
+
+    //HIDE THE BOTTOM SHEET
+
+    @Override
+    public void onBackPressed() {
+        if (sheetBehavior.getState() == BottomSheetBehavior.STATE_EXPANDED) {
+            sheetBehavior.setState(BottomSheetBehavior.STATE_COLLAPSED);
+        }
+        else {
+            this.finishAffinity();
+
+        }
+
+    }
+
+    @Override
+    public void onMapClick(LatLng latLng) {
+        if (sheetBehavior.getState() == BottomSheetBehavior.STATE_EXPANDED) {
+            sheetBehavior.setState(BottomSheetBehavior.STATE_COLLAPSED);
+        }
+    }
+
+
+
+    @Override
+    public void onGroundOverlayClick(GroundOverlay groundOverlay) {
+
+    }
+
+
+
+
+
+
+
 
 
 
@@ -541,7 +881,8 @@ public class MapsActivity extends FragmentActivity
                 android.Manifest.permission.ACCESS_FINE_LOCATION)
                 == PackageManager.PERMISSION_GRANTED) {
             mLocationPermissionGranted = true;
-        } else {
+        }
+        else {
             ActivityCompat.requestPermissions(this,
                     new String[]{android.Manifest.permission.ACCESS_FINE_LOCATION},
                     PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION);
@@ -638,23 +979,23 @@ public class MapsActivity extends FragmentActivity
 
 
 
-    @Override
-    protected void onResumeFragments() {
-        super.onResumeFragments();
-        if (mPermissionDenied) {
-            // Permission was not granted, display error dialog.
-            showMissingPermissionError();
-            mPermissionDenied = false;
-        }
-    }
-
-    /**
-     * Displays a dialog with error message explaining that the location permission is missing.
-     */
-    private void showMissingPermissionError() {
-        PermissionUtils.PermissionDeniedDialog
-                .newInstance(true).show(getSupportFragmentManager(), "dialog");
-    }
+//    @Override
+//    protected void onResumeFragments() {
+//        super.onResumeFragments();
+//        if (mPermissionDenied) {
+//            // Permission was not granted, display error dialog.
+//            showMissingPermissionError();
+//            mPermissionDenied = false;
+//        }
+//    }
+//
+//    /**
+//     * Displays a dialog with error message explaining that the location permission is missing.
+//     */
+//    private void showMissingPermissionError() {
+//        PermissionUtils.PermissionDeniedDialog
+//                .newInstance(true).show(getSupportFragmentManager(), "dialog");
+//    }
 
 
 
@@ -689,6 +1030,7 @@ public class MapsActivity extends FragmentActivity
                 dest = li2;
             } else if (text.equals("i3")) {
                 dest = li3;
+                show_bottom_sheet_poly(polygonei3);
             } else if (text.equals("i4")) {
                 dest = li4;
             } else if (text.equals("i6")) {
@@ -711,14 +1053,15 @@ public class MapsActivity extends FragmentActivity
                 dest = lFoyer;
             } else if (text.equals("Gymnase")) {
                 dest = lGymnase;
-            } else {
+            } else if (text.equals("B03")) {
                 dest = lB03;
+                show_bottom_sheet_poly(polygoneB03);
             }
 
 
             CameraPosition cameraaPosition = new CameraPosition.Builder()
                     .target(dest)      // Sets the center of the map to imt
-                    .zoom(19)                   // Sets the zoom
+                    .zoom(18)                   // Sets the zoom
                     .bearing(-24)                // Sets the orientation of the camera to imt north
                     .build();                   // Creates a CameraPosition from the builder
             mMap.animateCamera(CameraUpdateFactory.newCameraPosition(cameraaPosition));

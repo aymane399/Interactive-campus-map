@@ -6,11 +6,6 @@
     android:orientation="vertical">
 
 
-
-
-
-
-
     <fragment xmlns:android="http://schemas.android.com/apk/res/android"
         xmlns:map="http://schemas.android.com/apk/res-auto"
         xmlns:tools="http://schemas.android.com/tools"
@@ -39,6 +34,19 @@
             android:spinnerMode="dropdown" />
 
     </LinearLayout>
+
+    <FrameLayout
+        android:id="@+id/sunrise_tint"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:clipToPadding="false"
+        android:background="#60FD7D01"/>
+    <FrameLayout
+        android:id="@+id/sunset_tint"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:clipToPadding="false"
+        android:background="#1A000000"/>
 
     <FrameLayout
         android:id="@+id/frame_map"
@@ -83,9 +91,5 @@
         </LinearLayout>
 
     </FrameLayout>
-
-
-
-
 
 </RelativeLayout>

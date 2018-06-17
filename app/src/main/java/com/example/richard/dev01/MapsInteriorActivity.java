@@ -178,6 +178,9 @@ public class MapsInteriorActivity extends FragmentActivity implements OnMapReady
 
         posi3 = new LatLng(posi3y,posi3x);
 
+
+
+
         //CENTRE B03
         getResources().getValue(R.dimen.posB03x, typedValue, true);
         float posB03x = typedValue.getFloat();
