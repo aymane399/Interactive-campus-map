@@ -23,69 +23,72 @@
         tools:context="com.example.richard.dev01.MapsActivity"/>
 
     <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-        android:gravity="center"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:gravity="center"
         android:orientation="vertical">
 
         <Spinner
             android:id="@+id/spinner"
-            android:layout_marginTop="-270dp"
-            android:layout_width="150dp"
-            android:layout_height="30dp"
+            android:layout_width="161dp"
+            android:layout_height="29dp"
             android:layout_gravity="center"
+            android:layout_marginTop="-270dp"
             android:background="@color/common_google_signin_btn_text_dark_default"
             android:gravity="center"
             android:spinnerMode="dropdown" />
 
-    </LinearLayout>
+        <TextView
+            android:id="@+id/textView11"
+            android:layout_width="match_parent"
+            android:layout_height="1005dp"
+            android:text="TEXTE" />
 
-    <FrameLayout
-        android:id="@+id/frame_map"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:clipToPadding="false"
-        android:background="@drawable/gradient">
-
-        <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-            android:gravity="center"
+        <FrameLayout
+            android:id="@+id/frame_map"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:orientation="vertical">
+            android:background="@drawable/gradient"
+            android:clipToPadding="false">
 
-            <ImageView
-                android:id="@+id/imageView4"
-                android:layout_width="182dp"
-                android:layout_height="180dp"
-                android:layout_gravity="center"
-                android:src="@drawable/logo_appli3" />
+            <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:orientation="vertical">
 
-            <TextView
-                android:id="@+id/textView"
-                android:layout_marginTop="10dp"
-                android:layout_gravity="center"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textSize="23sp"
-                android:textStyle="bold"
-                android:textColorHighlight="@color/colorPrimary"
-                android:textColor="@color/colorWhite"
-                android:text="Welcome to IMT Map" />
+                <ImageView
+                    android:id="@+id/imageView4"
+                    android:layout_width="182dp"
+                    android:layout_height="180dp"
+                    android:layout_gravity="center"
+                    android:src="@drawable/logo_appli3" />
 
-            <ProgressBar
-                android:id="@+id/loading_spinner"
-                style="@android:style/Widget.DeviceDefault.Light.ProgressBar.Large"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center" />
+                <TextView
+                    android:id="@+id/textView"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:layout_marginTop="10dp"
+                    android:text="Welcome to IMT Map"
+                    android:textColor="@color/colorWhite"
+                    android:textColorHighlight="@color/colorPrimary"
+                    android:textSize="23sp"
+                    android:textStyle="bold" />
+
+                <ProgressBar
+                    android:id="@+id/loading_spinner"
+                    style="@android:style/Widget.DeviceDefault.Light.ProgressBar.Large"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center" />
 
 
-        </LinearLayout>
+            </LinearLayout>
 
-    </FrameLayout>
+        </FrameLayout>
 
-
-
+    </LinearLayout>
 
 
 </RelativeLayout>
