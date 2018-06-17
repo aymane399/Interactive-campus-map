@@ -9,7 +9,7 @@ import android.view.MotionEvent;
 
 
 
-public class ActivityPlan extends AppCompatActivity {
+public class AffichageImage extends AppCompatActivity {
 
     private ScaleGestureDetector mScaleGestureDetector;
     private float mScaleFactor = 1.0f;

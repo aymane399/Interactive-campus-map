@@ -13,5 +13,13 @@
     <item name="posB03x" format="float" type="dimen">-4.570567</item>
     <item name="posB03y" format="float" type="dimen">48.358442</item>
 
+    //Position bus vers mairie 48.360385, -4.571252
+    <item name="posBus1x" format="float" type="dimen">-4.571252</item>
+    <item name="posBus1y" format="float" type="dimen">48.360385</item>
+
+    //Position bus vers brest 48.360202, -4.570071
+    <item name="posBus2x" format="float" type="dimen">-4.570071</item>
+    <item name="posBus2y" format="float" type="dimen">48.360202</item>
+
 
 </resources>
