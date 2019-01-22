@@ -5,7 +5,10 @@ import android.animation.Animator;
 import android.content.Intent;
 import android.content.res.Resources;
 import android.graphics.Color;
+import android.location.LocationListener;
+import android.location.LocationManager;
 import android.nfc.Tag;
+import android.widget.ImageView;
 import android.widget.Toast;
 import android.view.View;
 import android.animation.AnimatorListenerAdapter;
@@ -38,12 +41,25 @@ import android.os.Bundle;
 import android.util.Log;
 import android.util.TypedValue;
 
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.List;
 
 
 import android.location.Location;
 
+import com.akexorcist.googledirection.DirectionCallback;
+import com.akexorcist.googledirection.GoogleDirection;
+import com.akexorcist.googledirection.constant.AvoidType;
+import com.akexorcist.googledirection.constant.TransportMode;
+import com.akexorcist.googledirection.model.Direction;
+import com.akexorcist.googledirection.model.Leg;
+import com.akexorcist.googledirection.model.Route;
+import com.akexorcist.googledirection.model.Step;
+import com.akexorcist.googledirection.util.DirectionConverter;
+import com.bumptech.glide.Glide;
+import com.bumptech.glide.request.target.GlideDrawableImageViewTarget;
 import com.google.android.gms.maps.GoogleMap.OnMyLocationButtonClickListener;
 import com.google.android.gms.maps.GoogleMap.OnMyLocationClickListener;
 
@@ -68,6 +84,7 @@ import com.google.android.gms.maps.model.GroundOverlay;
 import com.google.android.gms.maps.model.GroundOverlayOptions;
 
 
+import com.google.android.gms.maps.model.PolylineOptions;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.android.gms.location.FusedLocationProviderClient;
@@ -108,6 +125,7 @@ public class MapsActivity extends FragmentActivity
         OnMyLocationClickListener,
         GoogleMap.OnMapClickListener,
         GoogleMap.OnGroundOverlayClickListener,
+        LocationListener,
         OnMapReadyCallback,
         ActivityCompat.OnRequestPermissionsResultCallback,
         AdapterView.OnItemSelectedListener{
@@ -144,9 +162,22 @@ public class MapsActivity extends FragmentActivity
 
 
     //Polygones des batiments//
+    private Polygon polygonei1;
+    private Polygon polygonei2;
     private Polygon polygonei3;
+    private Polygon polygonei4;
+    private Polygon polygonei5;
+    private Polygon polygonei6;
+    private Polygon polygonei7;
+    private Polygon polygonei8;
+    private Polygon polygonei9;
+    private Polygon polygonei10;
+    private Polygon polygonei11;
+    private Polygon polygonei12;
+
     private Polygon polygoneB03;
 
+    private LatLng posi1;
     private LatLng posi3;
     private LatLng posB03;
     private LatLng posBus1;
@@ -159,9 +190,13 @@ public class MapsActivity extends FragmentActivity
 
     private CameraPosition cameraPosition;
 
+
+    ///LOCATION ////////////////////////////////////////////////////////////////////////
     private boolean mPermissionDenied = false;
 
-    private static final int LOCATION_PERMISSION_REQUEST_CODE = 1;
+    private static final String FINE_LOCATION = Manifest.permission.ACCESS_FINE_LOCATION;
+    private static final String COURSE_LOCATION = Manifest.permission.ACCESS_COARSE_LOCATION;
+    private static final int LOCATION_PERMISSION_REQUEST_CODE = 1234;
 
     // Keys for storing activity state.
     private static final String KEY_CAMERA_POSITION = "camera_position";
@@ -177,10 +212,12 @@ public class MapsActivity extends FragmentActivity
     // The geographical location where the device is currently located. That is, the last-known
     // location retrieved by the Fused Location Provider.
     private Location mLastKnownLocation;
+    private LatLng current_pos;
     private boolean mLocationPermissionGranted;
 
     // The entry point to the Fused Location Provider.
     private FusedLocationProviderClient mFusedLocationProviderClient;
+    private Boolean mLocationPermissionsGranted = false;
 
     private static final int PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION = 1;
 
@@ -189,6 +226,9 @@ public class MapsActivity extends FragmentActivity
 
     @BindView(R.id.sunrise_tint)
     FrameLayout sunrise_filter;
+
+    @BindView(R.id.sunset_tint)
+    FrameLayout sunset_filter;
 
 
 
@@ -230,25 +270,27 @@ public class MapsActivity extends FragmentActivity
 
 
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
-        SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
-                .findFragmentById(R.id.map);
-        mapFragment.getMapAsync(this);
+//        SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
+//                .findFragmentById(R.id.map);
+//        mapFragment.getMapAsync(this);
 
-        // Construct a FusedLocationProviderClient.
-        mFusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(this);
+
+
 
 
 
          ///TRANSITION LOADING SCREEN -> MAP
          mContentView = findViewById(R.id.map);
          mLoadingView = findViewById(R.id.frame_map);
+         ImageView imageView = findViewById(R.id.imageView_loading);
+         GlideDrawableImageViewTarget imageViewTarget = new GlideDrawableImageViewTarget(imageView);
+         Glide.with(this).load(R.raw.loading_intensively).into(imageViewTarget);
 
          //BOTTOM SHEET
          bat_name_text = findViewById(R.id.bat_name);
 
          // Retrieve and cache the system's default "medium" animation time.
-         mShortAnimationDuration = getResources().getInteger(
-                 android.R.integer.config_mediumAnimTime);
+         mShortAnimationDuration = getResources().getInteger(android.R.integer.config_mediumAnimTime);
 
 
         Spinner spinner = findViewById(R.id.spinner);
@@ -265,6 +307,13 @@ public class MapsActivity extends FragmentActivity
 
 
         sheetBehavior = BottomSheetBehavior.from(layoutBottomSheet);
+
+
+
+
+        ///LOCATION
+
+        getLocationPermission();
 
 
     }
@@ -321,7 +370,7 @@ public class MapsActivity extends FragmentActivity
         getResources().getValue(R.dimen.posi1y, typedValue, true);
         float posi1y = typedValue.getFloat();
 
-        final LatLng posi1 = new LatLng(posi1y,posi1x);
+        posi1 = new LatLng(posi1y,posi1x);
 
 
         //CENTRE I3
@@ -375,6 +424,16 @@ public class MapsActivity extends FragmentActivity
         mMap.setMaxZoomPreference(19f); //Zoom maximal
         mMap.setMinZoomPreference(15f); //Zoom Minimal
         //////////////////////////////////////////////
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -482,7 +541,6 @@ public class MapsActivity extends FragmentActivity
                     Log.e(TAG, "Style parsing failed.");
                 }
 
-                sunrise_filter.setVisibility(View.INVISIBLE);
                 System.out.println("NIGHT");
             }
 
@@ -505,12 +563,12 @@ public class MapsActivity extends FragmentActivity
                         && (sum_current < sum_max_sunset))
                          ) {
                     sunrise_filter.setVisibility(View.VISIBLE);
+                    sunset_filter.setVisibility(View.VISIBLE);
                     System.out.println("SUNRISE OR SUNSET");
                 }
 
                 //Met le filtre "DAY" avec le filtre sunset/sunrise
                 else {
-                    sunrise_filter.setVisibility(View.INVISIBLE);
                     System.out.println("DAY");
                 }
             }
@@ -597,15 +655,46 @@ public class MapsActivity extends FragmentActivity
 
         mBus2.setTag("Bus vers Brest");
 
+        //AUTRE ICONE
+
+//        mSurp = mMap.addGroundOverlay(new GroundOverlayOptions()
+//                .image(BitmapDescriptorFactory.fromResource(R.mipmap.bus_logo1))
+//                .bearing(-24)
+//                .clickable(true)
+//                .zIndex(2) //Position z
+//                .position(posSurp, 18f, 18f));
+//
+//        mSurp.setTag("Bus vers Brest");
+
 
 
         //////
         //////FORME DES BATIMENTS//////
-                                 //////
+                                 /////////////////////////////////////////////////////////////////////////////////
+
+
+        //polygonI1////////////////////////////////////////////////////////
+        PolygonOptions rectOptionsI1 = new PolygonOptions()
+                .add(new LatLng(48.357696, -4.571037))
+                .add(new LatLng(48.357734, -4.570897))
+                .add(new LatLng(48.357714, -4.570882))
+                .add(new LatLng(48.357725, -4.570846))
+                .add(new LatLng(48.357590, -4.570764))
+                .add(new LatLng(48.357621, -4.570651))
+                .add(new LatLng(48.357519, -4.570578))
+                .add(new LatLng(48.357440, -4.570854)) // Closes the polyline.
+                .clickable(true)
+                .zIndex(0) //Position z
+                .fillColor(Color.GRAY)
+                .strokeWidth(2f);
+
+
+        // Ajout du polygone I1 sur la carte
+        polygonei1 = mMap.addPolygon(rectOptionsI1);
+        polygonei1.setTag("I1"); //permet de différencier les polygones
 
 
         //polygonI3////////////////////////////////////////////////////////
-
         PolygonOptions rectOptionsI3 = new PolygonOptions()
                 .add(new LatLng(48.358136, -4.571402))
                 .add(new LatLng(48.358184, -4.571225))
@@ -627,8 +716,8 @@ public class MapsActivity extends FragmentActivity
         polygonei3.setTag("I3"); //permet de différencier les polygones
 
 
-        //polygonB03///////////////////////////////////////////////////////
 
+        //polygonB03///////////////////////////////////////////////////////
         PolygonOptions rectOptionsB03 = new PolygonOptions()
                 .add(new LatLng(48.358468, -4.570853))
                 .add(new LatLng(48.358533, -4.570646))
@@ -647,6 +736,180 @@ public class MapsActivity extends FragmentActivity
         // Ajout du polygone sur la carte
         polygoneB03 = mMap.addPolygon(rectOptionsB03);
         polygoneB03.setTag("B03"); //permet de différencier les polygones
+
+
+
+        //polygonI2////////////////////////////////////////////////////////
+        PolygonOptions rectOptionsI2 = new PolygonOptions()
+                .add(new LatLng(48.358080, -4.570637))
+                .add(new LatLng(48.358119, -4.570488))
+                .add(new LatLng(48.357888, -4.570335))
+                .add(new LatLng(48.357807, -4.570597))
+                .add(new LatLng(48.357912, -4.570662))
+                .add(new LatLng(48.357941, -4.570550))
+                .add(new LatLng(48.358080, -4.570637))  // Closes the polyline.
+                .clickable(true)
+                .zIndex(0) //Position z
+                .fillColor(Color.GRAY)
+                .strokeWidth(2f);
+
+
+        // Ajout du polygone I2 sur la carte
+        polygonei2 = mMap.addPolygon(rectOptionsI2);
+        polygonei2.setTag("I2"); //permet de différencier les polygones
+
+
+
+        //polygonI4////////////////////////////////////////////////////////
+        PolygonOptions rectOptionsI4 = new PolygonOptions()
+                .add(new LatLng(48.357216, -4.570153))
+                .add(new LatLng(48.357266, -4.569967))
+                .add(new LatLng(48.357080, -4.569839))
+                .add(new LatLng(48.357019, -4.570045))
+                .add(new LatLng(48.356931, -4.570353))
+                .add(new LatLng(48.357039, -4.570422))
+                .add(new LatLng(48.357114, -4.570140))
+                .add(new LatLng(48.357124, -4.570089))
+                .add(new LatLng(48.357216, -4.570153))
+                .clickable(true)
+                .zIndex(0) //Position z
+                .fillColor(Color.GRAY)
+                .strokeWidth(2f);
+
+
+        // Ajout du polygone I4 sur la carte
+        polygonei4 = mMap.addPolygon(rectOptionsI4);
+        polygonei4.setTag("I4"); //permet de différencier les polygones
+
+
+
+        //polygonI5////////////////////////////////////////////////////////
+        PolygonOptions rectOptionsI5 = new PolygonOptions()
+                .add(new LatLng(48.357196, -4.570428))
+                .add(new LatLng(48.357241, -4.570264))
+                .add(new LatLng(48.357484, -4.570418))
+                .add(new LatLng(48.357405, -4.570700))
+                .add(new LatLng(48.357302, -4.570635))
+                .add(new LatLng(48.357333, -4.570516))
+                .add(new LatLng(48.357196, -4.570428))
+
+                .clickable(true)
+                .zIndex(0) //Position z
+                .fillColor(Color.GRAY)
+                .strokeWidth(2f);
+
+
+        // Ajout du polygone I5 sur la carte/////a refaire
+        polygonei5 = mMap.addPolygon(rectOptionsI5);
+        polygonei5.setTag("I5"); //permet de différencier les polygones
+
+
+
+        //polygonI6////////////////////////////////////////////////////////
+        PolygonOptions rectOptionsI6 = new PolygonOptions()
+                .add(new LatLng(48.358033, -4.571724))
+                .add(new LatLng(48.357978, -4.571894))
+                .add(new LatLng(48.357631, -4.571638))
+                .add(new LatLng(48.357684, -4.571448))
+                .add(new LatLng(48.357756, -4.571448))
+                .add(new LatLng(48.357732, -4.571513))
+                .add(new LatLng(48.358033, -4.571724))
+                .clickable(true)
+                .zIndex(0) //Position z
+                .fillColor(Color.GRAY)
+                .strokeWidth(2f);
+
+
+
+        // Ajout du polygone I6 sur la carte
+        polygonei6 = mMap.addPolygon(rectOptionsI6);
+        polygonei6.setTag("I6"); //permet de différencier les polygones
+
+
+
+        //polygonI7////////////////////////////////////////////////////////
+        PolygonOptions rectOptionsI7 = new PolygonOptions()
+                .add(new LatLng(48.357597, -4.570410))
+                .add(new LatLng(48.357642, -4.570266))
+                .add(new LatLng(48.357580, -4.570224))
+                .add(new LatLng(48.357642, -4.570015))
+                .add(new LatLng(48.357569, -4.569937))
+                .add(new LatLng(48.357539, -4.569947))
+                .add(new LatLng(48.357436, -4.570301))
+                .clickable(true)
+                .zIndex(0) //Position z
+                .fillColor(Color.GRAY)
+                .strokeWidth(2f);
+
+
+        // Ajout du polygone I7 sur la carte
+        polygonei7 = mMap.addPolygon(rectOptionsI7);
+        polygonei7.setTag("I7"); //permet de différencier les polygones
+
+
+
+        //polygonI8////////////////////////////////////////////////////////
+        PolygonOptions rectOptionsI8 = new PolygonOptions()
+                .add(new LatLng(48.356665, -4.570722))
+                .add(new LatLng(48.356703, -4.570576))
+                .add(new LatLng(48.356603, -4.570510))
+                .add(new LatLng(48.356617, -4.570461))
+                .add(new LatLng(48.356599, -4.570447))
+                .add(new LatLng(48.356676, -4.570181))
+                .add(new LatLng(48.356583, -4.570119))
+                .add(new LatLng(48.356454, -4.570588))
+                .clickable(true)
+                .zIndex(0) //Position z
+                .fillColor(Color.GRAY)
+                .strokeWidth(2f);
+
+
+        // Ajout du polygone I8 sur la carte
+        polygonei8 = mMap.addPolygon(rectOptionsI8);
+        polygonei8.setTag("I8"); //permet de différencier les polygones
+
+
+
+        //polygonI9////////////////////////////////////////////////////////
+        PolygonOptions rectOptionsI9 = new PolygonOptions()
+                .add(new LatLng(48.356851, -4.570088))
+                .add(new LatLng(48.356976, -4.569591))
+                .add(new LatLng(48.356820, -4.569492))
+                .add(new LatLng(48.356759, -4.569488))
+                .add(new LatLng(48.356708, -4.569688))
+                .add(new LatLng(48.356824, -4.569757))
+                .add(new LatLng(48.356787, -4.569908))
+                .add(new LatLng(48.356772, -4.569899))
+                .add(new LatLng(48.356739, -4.570026))
+                .clickable(true)
+                .zIndex(0) //Position z
+                .fillColor(Color.GRAY)
+                .strokeWidth(2f);
+
+
+        // Ajout du polygone I9 sur la carte
+        polygonei9 = mMap.addPolygon(rectOptionsI9);
+        polygonei9.setTag("I9"); //permet de différencier les polygones
+
+
+
+        //polygonI10////////////////////////////////////////////////////////
+        PolygonOptions rectOptionsI10 = new PolygonOptions()
+                .add(new LatLng(48.357673, -4.572634))
+                .add(new LatLng(48.357604, -4.572891))
+                .add(new LatLng(48.357808, -4.573029))
+                .add(new LatLng(48.357856, -4.572846))
+                .add(new LatLng(48.357763, -4.572787))
+                .add(new LatLng(48.357783, -4.572704))
+                .clickable(true)
+                .zIndex(0) //Position z
+                .fillColor(Color.GRAY)
+                .strokeWidth(2f);
+
+        polygonei10= mMap.addPolygon(rectOptionsI10);
+        polygonei10.setTag("I10"); //permet de différencier les polygones
+
+
 
 
 
@@ -686,7 +949,6 @@ public class MapsActivity extends FragmentActivity
             {
 
                 System.out.println("MAP READY");
-                ActivityLoadingScreen.mapready = true;
 
                 FrameLayout layout = (FrameLayout)findViewById(R.id.frame_map);
                 layout.setVisibility(View.GONE);
@@ -720,6 +982,20 @@ public class MapsActivity extends FragmentActivity
         mMap.setOnMapClickListener(this);
 
 
+        if (mLocationPermissionsGranted) {
+            getDeviceLocation();
+
+            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
+                    != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this,
+                    Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                return;
+            }
+            mMap.setMyLocationEnabled(true);
+            mMap.getUiSettings().setMyLocationButtonEnabled(true);
+
+        }
+
+
 
 
     }
@@ -738,9 +1014,42 @@ public class MapsActivity extends FragmentActivity
 
 
     private void show_bottom_sheet_poly(Polygon polygon){
+        plan_inte.setTextColor(Color.parseColor("#FFFFFF"));
+        plan_inte.setBackgroundColor(Color.parseColor("#000000"));
+
+        if (polygon.getTag() == "I1"){ //click sur le bat I1
+            mMap.animateCamera(CameraUpdateFactory.newCameraPosition(newcameraposition(posi1,18)));
+            id_batiment = 3;
+            //REDONDANCE DES DEUX CONDITIONS POUR METTRE BIEN A JOUR LA FENETRE D'INFO
+            if (sheetBehavior.getState() != BottomSheetBehavior.STATE_EXPANDED) {
+                //INFO
+                plan_inte.setVisibility(View.GONE);
+                bat_name_text.setText("Bâtiment I1");
+                heure_ouvert.setVisibility(View.GONE);
+                info_supp.setVisibility(View.GONE);
+                info1.setVisibility(View.GONE);
+                info2.setVisibility(View.GONE);
+                sheetBehavior.setState(BottomSheetBehavior.STATE_EXPANDED);
+
+
+            }
+            else {
+                sheetBehavior.setState(BottomSheetBehavior.STATE_COLLAPSED);
+                //INFO
+                plan_inte.setVisibility(View.GONE);
+                bat_name_text.setText("Bâtiment I1");
+                heure_ouvert.setVisibility(View.GONE);
+                info_supp.setVisibility(View.GONE);
+                info1.setVisibility(View.GONE);
+                info2.setVisibility(View.GONE);
+                sheetBehavior.setState(BottomSheetBehavior.STATE_EXPANDED);
+            }
+        }
+
         if (polygon.getTag() == "I3"){ //click sur le bat I3
             mMap.animateCamera(CameraUpdateFactory.newCameraPosition(newcameraposition(posi3,18)));
             id_batiment = 3;
+            //REDONDANCE DES DEUX CONDITIONS POUR METTRE BIEN A JOUR LA FENETRE D'INFO
             if (sheetBehavior.getState() != BottomSheetBehavior.STATE_EXPANDED) {
                 //INFO
                 plan_inte.setVisibility(View.GONE);
@@ -774,9 +1083,10 @@ public class MapsActivity extends FragmentActivity
             if (sheetBehavior.getState() != BottomSheetBehavior.STATE_EXPANDED) {
                 //INFO
                 plan_inte.setVisibility(View.VISIBLE);
+                plan_inte.setText("Plan intérieur");
                 bat_name_text.setText("Bâtiment B03");
                 heure_ouvert.setVisibility(View.VISIBLE);
-                heure_ouvert.setText("Heures ouverture/fermture : 7h00 - 23h00");
+                heure_ouvert.setText("Heures ouverture/fermeture : 7h00 - 23h00");
                 info_supp.setVisibility(View.GONE);
                 info1.setVisibility(View.GONE);
                 info2.setVisibility(View.GONE);
@@ -788,9 +1098,10 @@ public class MapsActivity extends FragmentActivity
                 sheetBehavior.setState(BottomSheetBehavior.STATE_COLLAPSED);
                 //INFO
                 plan_inte.setVisibility(View.VISIBLE);
+                plan_inte.setText("Plan intérieur");
                 bat_name_text.setText("Bâtiment B03");
                 heure_ouvert.setVisibility(View.VISIBLE);
-                heure_ouvert.setText("Heures ouverture/fermture : 7h00 - 23h00");
+                heure_ouvert.setText("Heures ouverture/fermeture : 7h00 - 23h00");
                 info_supp.setVisibility(View.GONE);
                 info1.setVisibility(View.GONE);
                 info2.setVisibility(View.GONE);
@@ -805,15 +1116,118 @@ public class MapsActivity extends FragmentActivity
 
     private void show_bottom_sheet_ground(GroundOverlay groundOverlay) {
 
+        int currentDate = calendar.get(Calendar.DAY_OF_WEEK);
+        System.out.println("DAY OF THE WEEK = " + currentDate);
+
+        plan_inte.setVisibility(View.VISIBLE);
+        plan_inte.setTextColor(Color.parseColor("#FFFFFF"));
+        plan_inte.setBackgroundColor(Color.parseColor("#42AAEF"));
+        plan_inte.setText("Horaires de bus");
+
         if (groundOverlay.getTag() == "Bus vers mairie") {
+            DrawItinerary(posBus1);
             mMap.animateCamera(CameraUpdateFactory.newCameraPosition(newcameraposition(posBus1,18)));
             System.out.println("MAIRIE BUS");
+            id_batiment = 999;
+
+            if (sheetBehavior.getState() != BottomSheetBehavior.STATE_EXPANDED) {
+                //INFO
+                bat_name_text.setText("Bus vers Mairie de Plouzané");
+                heure_ouvert.setVisibility(View.VISIBLE);
+                //Horaires du dimanche
+                if (currentDate == 1){
+                    heure_ouvert.setText("Premier Bus à 9h10 / Dernier bus à 00h42");
+                    info_supp.setVisibility(View.VISIBLE);
+                    info1.setVisibility(View.VISIBLE);
+                    info1.setText("Attention : Horaires du dimanche et des jours fériés");
+                    info2.setVisibility(View.GONE);
+                }
+                else {
+                    heure_ouvert.setText("Premier Bus à 6h16 / Dernier bus à 00h42");
+                    info_supp.setVisibility(View.VISIBLE);
+                    info1.setVisibility(View.VISIBLE);
+                    info1.setText("(Attention aux horaires des jours fériés)");
+                    info2.setVisibility(View.GONE);
+                }
+                sheetBehavior.setState(BottomSheetBehavior.STATE_EXPANDED);
+
+
+            }
+            else {
+                sheetBehavior.setState(BottomSheetBehavior.STATE_COLLAPSED);
+                //INFO
+                bat_name_text.setText("Bus vers Mairie de Plouzané");
+                heure_ouvert.setVisibility(View.VISIBLE);
+                if (currentDate == 1){
+                    heure_ouvert.setText("Premier Bus à 9h10 / Dernier bus à 00h42");
+                    info_supp.setVisibility(View.VISIBLE);
+                    info1.setVisibility(View.VISIBLE);
+                    info1.setText("Attention : Horaires du dimanche et des jours fériés");
+                    info2.setVisibility(View.GONE);
+                }
+                else {
+                    heure_ouvert.setText("Premier Bus à 6h16 / Dernier bus à 00h42");
+                    info_supp.setVisibility(View.VISIBLE);
+                    info1.setVisibility(View.VISIBLE);
+                    info1.setText("(Attention aux horaires des jours fériés)");
+                    info2.setVisibility(View.GONE);
+                }
+                sheetBehavior.setState(BottomSheetBehavior.STATE_EXPANDED);
+            }
 
         }
 
         else if (groundOverlay.getTag() == "Bus vers Brest") {
             mMap.animateCamera(CameraUpdateFactory.newCameraPosition(newcameraposition(posBus2,18)));
             System.out.println("BREST BUS");
+            id_batiment = 998;
+            if (sheetBehavior.getState() != BottomSheetBehavior.STATE_EXPANDED) {
+                //INFO
+                plan_inte.setVisibility(View.VISIBLE);
+                plan_inte.setText("Horaires de bus");
+                bat_name_text.setText("Bus vers Fort Montbarey (Brest)");
+                heure_ouvert.setVisibility(View.VISIBLE);
+                if (currentDate == 1){
+                    heure_ouvert.setText("Premier Bus à 9h24 / Dernier bus à 23h57");
+                    info_supp.setVisibility(View.VISIBLE);
+                    info1.setVisibility(View.VISIBLE);
+                    info1.setText("Attention : Horaires du dimanche et des jours fériés");
+                    info2.setVisibility(View.GONE);
+                }
+                else {
+                    heure_ouvert.setText("Premier Bus à 5h52 / Dernier bus à 23h56");
+                    info_supp.setVisibility(View.VISIBLE);
+                    info1.setVisibility(View.VISIBLE);
+                    info1.setText("(Attention aux horaires des jours fériés)");
+                    info2.setVisibility(View.GONE);
+                }
+                sheetBehavior.setState(BottomSheetBehavior.STATE_EXPANDED);
+
+
+            }
+            else {
+                sheetBehavior.setState(BottomSheetBehavior.STATE_COLLAPSED);
+                //INFO
+                plan_inte.setVisibility(View.VISIBLE);
+                plan_inte.setText("Horaires de bus");
+                bat_name_text.setText("Bus vers Fort Montbarey (Brest)");
+                heure_ouvert.setVisibility(View.VISIBLE);
+                if (currentDate == 1){
+                    heure_ouvert.setText("Premier Bus à 9h24 / Dernier bus à 23h57");
+                    info_supp.setVisibility(View.VISIBLE);
+                    info1.setVisibility(View.VISIBLE);
+                    info1.setText("Attention : Horaires du dimanche et des jours fériés");
+                    info2.setVisibility(View.GONE);
+                }
+                else {
+                    heure_ouvert.setText("Premier Bus à 5h52 / Dernier bus à 23h56");
+                    info_supp.setVisibility(View.VISIBLE);
+                    info1.setVisibility(View.VISIBLE);
+                    info1.setText("(Attention aux horaires des jours fériés)");
+                    info2.setVisibility(View.GONE);
+                }
+                sheetBehavior.setState(BottomSheetBehavior.STATE_EXPANDED);
+            }
 
         }
 
@@ -823,10 +1237,24 @@ public class MapsActivity extends FragmentActivity
 
 
 
+
+
+
+
+
+
     @OnClick(R.id.plan_inte)
     public void change_activity() {
         if (id_batiment == 15){ //click sur le bat B03
             startActivity(new Intent(MapsActivity.this, MapsInteriorActivity.class));
+        }
+
+        else if (id_batiment == 999){
+            startActivity(new Intent(MapsActivity.this, AffichageImage.class));
+        }
+
+        else if (id_batiment == 998){
+            startActivity(new Intent(MapsActivity.this, AffichageImage.class));
         }
 
     }
@@ -861,146 +1289,7 @@ public class MapsActivity extends FragmentActivity
 
 
 
-
-
-
-
-
-
-
-    /**
-     * Prompts the user for permission to use the device location.
-     */
-    private void getLocationPermission() {
-        /*
-         * Request location permission, so that we can get the location of the
-         * device. The result of the permission request is handled by a callback,
-         * onRequestPermissionsResult.
-         */
-        if (ContextCompat.checkSelfPermission(this.getApplicationContext(),
-                android.Manifest.permission.ACCESS_FINE_LOCATION)
-                == PackageManager.PERMISSION_GRANTED) {
-            mLocationPermissionGranted = true;
-        }
-        else {
-            ActivityCompat.requestPermissions(this,
-                    new String[]{android.Manifest.permission.ACCESS_FINE_LOCATION},
-                    PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION);
-        }
-    }
-
-    /**
-     * Handles the result of the request for location permissions.
-     */
-    @Override
-    public void onRequestPermissionsResult(int requestCode,
-                                           @NonNull String permissions[],
-                                           @NonNull int[] grantResults) {
-        mLocationPermissionGranted = false;
-        switch (requestCode) {
-            case PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION: {
-                // If request is cancelled, the result arrays are empty.
-                if (grantResults.length > 0
-                        && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    mLocationPermissionGranted = true;
-                }
-            }
-        }
-        updateLocationUI();
-    }
-
-
-    /**
-     * Gets the current location of the device, and positions the map's camera.
-     */
-    private void getDeviceLocation() {
-        /*
-         * Get the best and most recent location of the device, which may be null in rare
-         * cases when a location is not available.
-         */
-        try {
-            if (mLocationPermissionGranted) {
-                Task<Location> locationResult = mFusedLocationProviderClient.getLastLocation();
-                locationResult.addOnCompleteListener(this, new OnCompleteListener<Location>() {
-                    @Override
-                    public void onComplete(@NonNull Task<Location> task) {
-                        if (task.isSuccessful()) {
-                            // Set the map's camera position to the current location of the device.
-                            mLastKnownLocation = task.getResult();
-                        } else {
-                            Log.d(TAG, "Current location is null. Using defaults.");
-                            Log.e(TAG, "Exception: %s", task.getException());
-                            mMap.getUiSettings().setMyLocationButtonEnabled(false);
-                        }
-                    }
-                });
-            }
-        } catch (SecurityException e)  {
-            Log.e("Exception: %s", e.getMessage());
-        }
-    }
-
-    private void updateLocationUI() {
-        if (mMap == null) {
-            return;
-        }
-        try {
-            if (mLocationPermissionGranted) {
-                mMap.setMyLocationEnabled(true);
-                mMap.getUiSettings().setMyLocationButtonEnabled(true);
-            } else {
-                mMap.setMyLocationEnabled(false);
-                mMap.getUiSettings().setMyLocationButtonEnabled(false);
-                mLastKnownLocation = null;
-                getLocationPermission();
-            }
-        } catch (SecurityException e)  {
-            Log.e("Exception: %s", e.getMessage());
-        }
-    }
-
-
-
-
-
-
-    @Override
-    public boolean onMyLocationButtonClick() {
-        Toast.makeText(this, "MyLocation button clicked", Toast.LENGTH_SHORT).show();
-        // Return false so that we don't consume the event and the default behavior still occurs
-        // (the camera animates to the user's current position).
-        return false;
-    }
-
-    @Override
-    public void onMyLocationClick(@NonNull Location location) {
-        Toast.makeText(this, "Current location:\n" + location, Toast.LENGTH_LONG).show();
-    }
-
-
-
-//    @Override
-//    protected void onResumeFragments() {
-//        super.onResumeFragments();
-//        if (mPermissionDenied) {
-//            // Permission was not granted, display error dialog.
-//            showMissingPermissionError();
-//            mPermissionDenied = false;
-//        }
-//    }
-//
-//    /**
-//     * Displays a dialog with error message explaining that the location permission is missing.
-//     */
-//    private void showMissingPermissionError() {
-//        PermissionUtils.PermissionDeniedDialog
-//                .newInstance(true).show(getSupportFragmentManager(), "dialog");
-//    }
-
-
-
-
-    /*** LISTE DES BATIMENTS ***/
+    /*** LISTE DES BATIMENTS ***//////////////////////////////////////////////////////:
 
 
     @Override
@@ -1070,10 +1359,6 @@ public class MapsActivity extends FragmentActivity
 
     }
 
-
-
-
-
     @Override
     public void onNothingSelected(AdapterView<?> adapterView) {
 
@@ -1083,6 +1368,222 @@ public class MapsActivity extends FragmentActivity
     public void onPointerCaptureChanged(boolean hasCapture) {
 
     }
+
+    ////////////////////////////////////////////////////////
+
+
+    /*** ITINERARY ***/
+    private void DrawItinerary(LatLng dest) {
+
+        if ((mLocationPermissionsGranted) & (current_pos != null)) {
+
+            GoogleDirection.withServerKey("AIzaSyBWB_3Uekwk-ktivQ5Q-VHXjqZahEys7a0") //Clé API Google Direction
+                    .from(current_pos)
+                    .to(dest)
+                    .transitMode(TransportMode.WALKING)
+                    .execute(new DirectionCallback() {
+                        @Override
+                        public void onDirectionSuccess(Direction direction, String rawBody) {
+                            if (direction.isOK()) {
+
+                                List<Step> stepList = direction.getRouteList().get(0).getLegList().get(0).getStepList();
+                                ArrayList<PolylineOptions> polylineOptionList = DirectionConverter.createTransitPolyline(getApplicationContext(), stepList, 3, Color.BLUE, 3, Color.BLUE);
+                                for (PolylineOptions polylineOption : polylineOptionList) {
+                                    mMap.addPolyline(polylineOption);
+                                }
+
+                                System.out.println("Direction OK");
+
+
+                            } else {
+                                System.out.println("Direction pas OK");
+
+
+                            }
+                        }
+
+                        @Override
+                        public void onDirectionFailure(Throwable t) {
+                            System.out.println("Direction pas du tout OK");
+                        }
+                    });
+        }
+
+        else {
+            System.out.println("NO CURRENT POSITION");
+        }
+    }
+
+
+
+
+
+
+
+
+
+
+    /**
+     * Prompts the user for permission to use the device location.
+     */
+    private void getLocationPermission(){
+        Log.d(TAG, "getLocationPermission: getting location permissions");
+        String[] permissions = {Manifest.permission.ACCESS_FINE_LOCATION,
+                Manifest.permission.ACCESS_COARSE_LOCATION};
+
+        if(ContextCompat.checkSelfPermission(this.getApplicationContext(),
+                FINE_LOCATION) == PackageManager.PERMISSION_GRANTED){
+            if(ContextCompat.checkSelfPermission(this.getApplicationContext(),
+                    COURSE_LOCATION) == PackageManager.PERMISSION_GRANTED){
+                mLocationPermissionsGranted = true;
+                initMap();
+            }else{
+                ActivityCompat.requestPermissions(this,
+                        permissions,
+                        LOCATION_PERMISSION_REQUEST_CODE);
+            }
+        }else{
+            ActivityCompat.requestPermissions(this,
+                    permissions,
+                    LOCATION_PERMISSION_REQUEST_CODE);
+        }
+    }
+
+
+
+    /**
+     * Gets the current location of the device, and positions the map's camera.
+     */
+
+    private Location currentLocation;
+
+    private void getDeviceLocation(){
+        Log.d(TAG, "getDeviceLocation: getting the devices current location");
+
+        mFusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(this);
+
+        try{
+            if(mLocationPermissionsGranted){
+
+                final Task location = mFusedLocationProviderClient.getLastLocation();
+                location.addOnCompleteListener(new OnCompleteListener() {
+                    @Override
+                    public void onComplete(@NonNull Task task) {
+                        if(task.isSuccessful()){
+                            Log.d(TAG, "onComplete: found location!");
+                            currentLocation = (Location) task.getResult();
+
+
+
+
+                        }else{
+                            Log.d(TAG, "onComplete: current location is null");
+                            Toast.makeText(MapsActivity.this, "unable to get current location", Toast.LENGTH_SHORT).show();
+                        }
+                    }
+                });
+            }
+        }catch (SecurityException e){
+            Log.e(TAG, "getDeviceLocation: SecurityException: " + e.getMessage() );
+        }
+    }
+
+
+
+    private void initMap(){
+        Log.d(TAG, "initMap: initializing map");
+        SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
+                .findFragmentById(R.id.map);
+        mapFragment.getMapAsync(this);
+    }
+
+    /**
+     * Handles the result of the request for location permissions.
+     */
+
+
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        Log.d(TAG, "onRequestPermissionsResult: called.");
+        mLocationPermissionsGranted = false;
+
+        switch(requestCode){
+            case LOCATION_PERMISSION_REQUEST_CODE:{
+                if(grantResults.length > 0){
+                    for(int i = 0; i < grantResults.length; i++){
+                        if(grantResults[i] != PackageManager.PERMISSION_GRANTED){
+                            mLocationPermissionsGranted = false;
+                            Log.d(TAG, "onRequestPermissionsResult: permission failed");
+                            return;
+                        }
+                    }
+                    Log.d(TAG, "onRequestPermissionsResult: permission granted");
+                    mLocationPermissionsGranted = true;
+                    initMap();
+                }
+            }
+        }
+    }
+
+
+
+
+
+
+    @Override
+    public boolean onMyLocationButtonClick() {
+        // Return false so that we don't consume the event and the default behavior still occurs
+        // (the camera animates to the user's current position).
+        return false;
+    }
+
+    @Override
+    public void onMyLocationClick(@NonNull Location location) {
+    }
+
+
+    public LocationManager locationManager;
+
+
+
+    @Override
+    public void onLocationChanged(Location location){
+        //ITINERAIRE :
+
+
+
+        //remove location callback:
+        locationManager.removeUpdates(this);
+
+        double current_pos_y = location.getLatitude();
+        double current_pos_x = location.getLongitude();
+        current_pos = new LatLng(current_pos_y,current_pos_x);
+
+    }
+
+    @Override
+    public void onStatusChanged(String provider, int status, Bundle extras) {
+
+    }
+
+    @Override
+    public void onProviderEnabled(String provider) {
+
+    }
+
+    @Override
+    public void onProviderDisabled(String provider) {
+
+    }
+
+
+
+
+
+
+
+
+
+
 
 
 

@@ -4,7 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context="com.example.richard.dev01.ActivityPlan">
+    tools:context="com.example.richard.dev01.AffichageImage">
 
     <ImageView
         android:id="@+id/imageView"
@@ -15,7 +15,7 @@
         app:layout_constraintHorizontal_bias="0.5"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:srcCompat="@mipmap/nomi3" />
+        app:srcCompat="@drawable/b03_plan_1e" />
 
 
 </android.support.constraint.ConstraintLayout>

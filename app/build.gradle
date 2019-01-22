@@ -1,6 +1,7 @@
 apply plugin: 'com.android.application'
 
 android {
+
     compileSdkVersion 26
     defaultConfig {
         applicationId "com.example.richard.dev01"
@@ -17,6 +18,9 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
+
+
+
 }
 
 dependencies {
@@ -37,7 +41,9 @@ dependencies {
     compile 'com.luckycatlabs:SunriseSunsetCalculator:1.2'
     compile('org.shredzone.commons:commons-suncalc:2.2')
     compile 'ca.rmen:lib-sunrise-sunset:1.1.1'
-
+    //image loading
+    compile 'com.github.bumptech.glide:glide:3.7.0'
+    implementation 'com.akexorcist:googledirectionlibrary:1.1.1'
 
 
 

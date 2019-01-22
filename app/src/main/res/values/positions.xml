@@ -21,5 +21,8 @@
     <item name="posBus2x" format="float" type="dimen">-4.570071</item>
     <item name="posBus2y" format="float" type="dimen">48.360202</item>
 
+    //Surprise 48.354469, -4.558610
+    <item name="posSurpx" format="float" type="dimen">-4.558610</item>
+    <item name="posSurpy" format="float" type="dimen">48.354469</item>
 
 </resources>
