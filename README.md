@@ -43,6 +43,7 @@
  The application must be intuitive and easy to use.
 
  ## Some screenshots of the app
+Loading screen on the left, daylight theme main screen on the right
 
 ![Alt text](screens1.png?raw=true "Loading screen on the left, daylight theme main screen on the right")
 
