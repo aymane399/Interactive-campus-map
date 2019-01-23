@@ -47,3 +47,7 @@ Loading screen on the left, daylight theme main screen on the right
 
 ![Alt text](screens1.png?raw=true "Loading screen on the left, daylight theme main screen on the right")
 
+Research bar usage in nightfall theme on the left and info menu in daylight theme on the right
+
+![Alt text](screens2.png?raw=true "Loading screen on the left, daylight theme main screen on the right")
+
