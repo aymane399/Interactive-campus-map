@@ -44,5 +44,5 @@
 
  ## Some screenshots of the app
 
-
+![Alt text](screens1.jpg?raw=true "Loading screen on the left, daylight theme main screen on the right")
 
